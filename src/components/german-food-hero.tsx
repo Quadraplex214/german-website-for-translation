@@ -282,82 +282,83 @@ export default function GermanHeroFood() {
               Drei Generationen authentischer deutscher Kochkunst
             </p>
           </motion.div>
+          <div className="flex items-center justify-center min-h-screen px-4">
+            <div className="grid lg:grid-cols-2 gap-12 items-center max-w-6xl w-full">
+              <motion.div
+                className="space-y-6"
+                initial={{ opacity: 0, x: -50 }}
+                animate={aboutInView ? { opacity: 1, x: 0 } : {}}
+                transition={{ duration: 0.8, delay: 0.2 }}
+              >
+                <p className="text-lg text-neutral-600 dark:text-neutral-300 leading-relaxed">
+                  1952 von Heinrich Müller gegründet, serviert unser Restaurant
+                  seit über sieben Jahrzehnten authentische deutsche Küche. Was
+                  als kleine Familienküche begann, ist zu einer beliebten
+                  Institution gewachsen, die traditionelle Rezepte und Techniken
+                  bewahrt, die über Generationen weitergegeben wurden.
+                </p>
 
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
-            <motion.div
-              className="space-y-6"
-              initial={{ opacity: 0, x: -50 }}
-              animate={aboutInView ? { opacity: 1, x: 0 } : {}}
-              transition={{ duration: 0.8, delay: 0.2 }}
-            >
-              <p className="text-lg text-neutral-600 dark:text-neutral-300 leading-relaxed">
-                1952 von Heinrich Müller gegründet, serviert unser Restaurant
-                seit über sieben Jahrzehnten authentische deutsche Küche. Was
-                als kleine Familienküche begann, ist zu einer beliebten
-                Institution gewachsen, die traditionelle Rezepte und Techniken
-                bewahrt, die über Generationen weitergegeben wurden.
-              </p>
+                <div className="grid grid-cols-2 gap-6 pt-6">
+                  {[
+                    {
+                      icon: Award,
+                      title: "Preisgekrönt",
+                      desc: "Bestes deutsches Restaurant 2023",
+                    },
+                    {
+                      icon: Users,
+                      title: "Familiengeführt",
+                      desc: "Drei Generationen stark",
+                    },
+                    {
+                      icon: Heart,
+                      title: "Mit Liebe gemacht",
+                      desc: "Traditionelle Rezepte",
+                    },
+                    {
+                      icon: Utensils,
+                      title: "Täglich frisch",
+                      desc: "Regionale Zutaten",
+                    },
+                  ].map((item, index) => (
+                    <motion.div
+                      key={index}
+                      className="flex items-start gap-3"
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={aboutInView ? { opacity: 1, y: 0 } : {}}
+                      transition={{ delay: 0.4 + index * 0.1 }}
+                    >
+                      <div className="w-10 h-10 bg-amber-100 dark:bg-amber-900/30 rounded-lg flex items-center justify-center">
+                        <item.icon className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+                      </div>
+                      <div>
+                        <h4 className="font-semibold text-neutral-900 dark:text-neutral-100">
+                          {item.title}
+                        </h4>
+                        <p className="text-sm text-neutral-600 dark:text-neutral-400">
+                          {item.desc}
+                        </p>
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
+              </motion.div>
 
-              <div className="grid grid-cols-2 gap-6 pt-6">
-                {[
-                  {
-                    icon: Award,
-                    title: "Preisgekrönt",
-                    desc: "Bestes deutsches Restaurant 2023",
-                  },
-                  {
-                    icon: Users,
-                    title: "Familiengeführt",
-                    desc: "Drei Generationen stark",
-                  },
-                  {
-                    icon: Heart,
-                    title: "Mit Liebe gemacht",
-                    desc: "Traditionelle Rezepte",
-                  },
-                  {
-                    icon: Utensils,
-                    title: "Täglich frisch",
-                    desc: "Regionale Zutaten",
-                  },
-                ].map((item, index) => (
-                  <motion.div
-                    key={index}
-                    className="flex items-start gap-3"
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={aboutInView ? { opacity: 1, y: 0 } : {}}
-                    transition={{ delay: 0.4 + index * 0.1 }}
-                  >
-                    <div className="w-10 h-10 bg-amber-100 dark:bg-amber-900/30 rounded-lg flex items-center justify-center">
-                      <item.icon className="h-5 w-5 text-amber-600 dark:text-amber-400" />
-                    </div>
-                    <div>
-                      <h4 className="font-semibold text-neutral-900 dark:text-neutral-100">
-                        {item.title}
-                      </h4>
-                      <p className="text-sm text-neutral-600 dark:text-neutral-400">
-                        {item.desc}
-                      </p>
-                    </div>
-                  </motion.div>
-                ))}
-              </div>
-            </motion.div>
-
-            <motion.div
-              className="relative"
-              initial={{ opacity: 0, x: 50 }}
-              animate={aboutInView ? { opacity: 1, x: 0 } : {}}
-              transition={{ duration: 0.8, delay: 0.4 }}
-            >
-              <Image
-                src="/interior1.jpg"
-                width="600"
-                height="500"
-                alt="Traditionelles deutsches Restaurant Interieur"
-                className="rounded-2xl shadow-2xl"
-              />
-            </motion.div>
+              <motion.div
+                className="relative"
+                initial={{ opacity: 0, x: 50 }}
+                animate={aboutInView ? { opacity: 1, x: 0 } : {}}
+                transition={{ duration: 0.8, delay: 0.4 }}
+              >
+                <Image
+                  src="/interior1.jpg"
+                  width="600"
+                  height="500"
+                  alt="Traditionelles deutsches Restaurant Interieur"
+                  className="rounded-2xl shadow-2xl"
+                />
+              </motion.div>
+            </div>
           </div>
         </div>
       </section>
