@@ -9,15 +9,17 @@ import {
 import { cn } from "@/lib/utils";
 import type { JSX } from "react/jsx-runtime"; // Import JSX to fix the undeclared variable error
 
+type NavItem = {
+  name: string;
+  link: string;
+  icon?: JSX.Element;
+};
+
 export const FloatingNav = ({
   navItems,
   className,
 }: {
-  navItems: {
-    name: string;
-    link: string;
-    icon?: JSX.Element;
-  }[];
+  navItems: NavItem[];
   className?: string;
 }) => {
   const { scrollYProgress } = useScroll();
@@ -59,7 +61,7 @@ export const FloatingNav = ({
           className
         )}
       >
-        {navItems.map((navItem: any, idx: number) => (
+        {navItems.map((navItem: NavItem, idx: number) => (
           <a
             key={`link=${idx}`}
             href={navItem.link}
