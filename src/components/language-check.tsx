@@ -14,11 +14,7 @@ export default function LanguageChecker() {
               Sprachdienstleistungen
             </div>
             <h1 className="text-4xl font-bold tracking-tight sm:text-5xl md:text-6xl lg:text-7xl">
-              Die Übersetzung dieser{" "}
-              <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                Website
-              </span>{" "}
-              ist
+              Die Übersetzung dieser Website ist {websiteLanguage.language}
             </h1>
             <p className="mx-auto max-w-2xl text-lg text-muted-foreground md:text-xl">
               Entdecken Sie nahtlose mehrsprachige Erfahrungen mit unseren
