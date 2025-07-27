@@ -8,18 +8,18 @@ interface LanguageContextType {
 }
 
 export const LanguageContext = createContext<LanguageContextType>({
-  language: "en",
+  language: "de",
   setLanguage: () => {},
 });
 
 export const LanguageProvider: React.FC<{ children: ReactNode }> = ({
   children,
 }) => {
-  const [language, setLanguage] = useState<string>("en"); // Default to 'en' on server
+  const [language, setLanguage] = useState<string>("de"); // Default to 'de' on server
 
   useEffect(() => {
     // Set initial language from document.documentElement.lang (client-side only)
-    const initialLang = document.documentElement.lang || "en";
+    const initialLang = document.documentElement.lang || "de";
     console.log("Initial language:", initialLang);
     setLanguage(initialLang);
 
@@ -30,7 +30,7 @@ export const LanguageProvider: React.FC<{ children: ReactNode }> = ({
           mutation.type === "attributes" &&
           mutation.attributeName === "lang"
         ) {
-          const newLang = document.documentElement.lang || "en";
+          const newLang = document.documentElement.lang || "de";
           console.log("Language changed to:", newLang);
           setLanguage(newLang);
         }
