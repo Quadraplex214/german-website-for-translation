@@ -5,6 +5,15 @@ import { useLanguage } from "./language-provider";
 export default function LanguageChecker() {
   const websiteLanguage = useLanguage();
   console.log(websiteLanguage.language);
+  const languageMap: Record<string, string> = {
+    "en-us": "English",
+    "fr-fr": "Français",
+    "ko-kr": "한국어",
+    "ja-jp": "日本語",
+    de: "Deutsch",
+  };
+
+  const languageName = languageMap[websiteLanguage.language] || "English";
   return (
     <section className="w-full py-20 md:py-32 lg:py-40">
       <div className="container px-4 md:px-6">
