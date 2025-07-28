@@ -4,6 +4,7 @@ import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import Script from "next/script";
 import { LanguageProvider } from "@/components/language-provider";
+import { Toaster } from "@/components/ui/sonner";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -39,6 +40,7 @@ export default function RootLayout({
             storageKey="gasthaus-theme"
           >
             {children}
+            <Toaster />
           </ThemeProvider>
         </LanguageProvider>
         <Script

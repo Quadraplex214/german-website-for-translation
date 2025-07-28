@@ -17,6 +17,7 @@ import { motion, useScroll, useTransform, useInView } from "framer-motion";
 import { useRef } from "react";
 import Navbar from "./navbar";
 import { Button } from "./ui/button";
+import { toast } from "sonner";
 
 const testimonials = [
   {
@@ -170,6 +171,9 @@ export default function GermanHeroFood() {
                   variant="outline"
                   size="lg"
                   className="border-amber-600/50 text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/20 px-8 bg-transparent backdrop-blur-sm"
+                  onClick={() => {
+                    toast("Reservierung erfolgreich!");
+                  }}
                 >
                   Tisch reservieren
                 </Button>
