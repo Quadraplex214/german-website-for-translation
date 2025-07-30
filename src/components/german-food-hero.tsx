@@ -554,9 +554,9 @@ export default function GermanHeroFood() {
                   <MapPin className="h-5 w-5 text-amber-400 mt-0.5" />
                   <div>
                     <p className="text-neutral-300">Bayerische Straße 123</p>
-                    <p className="text-neutral-300">
+                    <h4 className="text-neutral-300">
                       80331 München, Deutschland
-                    </p>
+                    </h4>
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
