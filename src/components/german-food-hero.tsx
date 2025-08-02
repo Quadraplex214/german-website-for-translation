@@ -546,9 +546,9 @@ export default function GermanHeroFood() {
 
             {/* Contact Info */}
             <div className="space-y-4">
-              <span className="text-lg font-semibold text-amber-400">
-                Kontaktinformationen
-              </span>
+              <h4 className="text-lg font-semibold text-amber-400">
+                Kontakt
+              </h4>
               <div className="space-y-3">
                 <div className="flex items-start gap-3">
                   <MapPin className="h-5 w-5 text-amber-400 mt-0.5" />
