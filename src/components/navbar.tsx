@@ -41,7 +41,10 @@ export default function Navbar() {
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center gap-2">
               <ChefHat className="h-8 w-8 text-amber-600" />
-              <span className="text-xl font-bold text-neutral-900">
+              <span
+                className="text-xl font-bold text-neutral-900"
+                translate="no"
+              >
                 Gasthaus München
               </span>
             </div>
