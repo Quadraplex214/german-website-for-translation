@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack",
+    "local": "next dev --port 3201",
     "build": "next build",
     "start": "next start",
     "lint": "next lint"

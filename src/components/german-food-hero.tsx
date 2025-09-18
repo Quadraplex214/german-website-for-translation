@@ -128,7 +128,7 @@ export default function GermanHeroFood() {
                 >
                   Schmecken Sie das Herz{" "}
                   <span className="text-amber-600 dark:text-amber-400">
-                    Deutschlands
+                    Words
                   </span>
                 </motion.h1>
 
