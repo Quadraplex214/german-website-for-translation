@@ -141,7 +141,7 @@ export default function GermanHeroFood() {
                   Erleben Sie authentische deutsche Aromen mit unseren
                   traditionellen Rezepten, die über Generationen weitergegeben
                   wurden. Von herzhaftem Sauerbraten bis zu knusprigem Schnitzel
-                  - entdecken Sie das reiche kulinarische Erbe Deutschlands.
+                  - entdecken Sie das reiche kulinarische Erbe Deutschlands
                 </motion.p>
               </div>
 
