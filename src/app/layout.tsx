@@ -45,7 +45,7 @@ export default function RootLayout({
         </LanguageProvider>
         <Script
           src="https://storage.googleapis.com/website-translation-script/translator.js"
-          data-api-key="wt_e65ed35e439f4e3a_AL2ce3xE3KA4C-Iqo7dwog"
+          data-api-key="wt_6b272245b7264ffd_bceY03d9_-p4BoiMsNF52A"
         />
       </body>
     </html>
