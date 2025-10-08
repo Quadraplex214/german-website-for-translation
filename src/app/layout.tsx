@@ -43,10 +43,6 @@ export default function RootLayout({
             <Toaster />
           </ThemeProvider>
         </LanguageProvider>
-        <Script
-          src="https://storage.googleapis.com/website-translation-script/translator.dev.js"
-          data-api-key="wt_b9ed8167461c4295_zPUY-o__Npqvgakacn13sA"
-        />
       </body>
     </html>
   );
