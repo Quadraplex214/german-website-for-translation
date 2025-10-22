@@ -1468,6 +1468,7 @@
       this.toggleButton = document.createElement("button");
       this.toggleButton.id = SELECTORS.DROPDOWN;
       this.toggleButton.setAttribute("data-no-translate", "true");
+      this.toggleButton.setAttribute("aria-label", "Open language selector");
       this.toggleButton.innerHTML = `
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M21 12a9 9 0 0 1-9 9m9-9a9 9 0 0 0-9-9m9 9H3m9 9a9 9 0 0 1-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9"/>
@@ -1484,20 +1485,24 @@
             align-items: center;
             justify-content: center;
             cursor: pointer;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
             transition: all 0.2s ease;
+            position: relative;
+            overflow: hidden;
         `;
-      this.toggleButton.addEventListener("click", () => {
-        this.isDropdownOpen = !this.isDropdownOpen;
-        if (this.isDropdownOpen) {
+      this.toggleButton.addEventListener("mouseenter", () => {
+        this.toggleButton.style.transform = "scale(1.05)";
+        this.toggleButton.style.boxShadow = "0 6px 8px rgba(0,0,0,0.15)";
+      });
+      this.toggleButton.addEventListener("mouseleave", () => {
+        this.toggleButton.style.transform = "scale(1)";
+        this.toggleButton.style.boxShadow = "0 4px 6px rgba(0,0,0,0.1)";
+      });
+      this.toggleButton.addEventListener("click", (e) => {
+        e.stopPropagation();
+        if (!this.isDropdownOpen) {
           this.createContainer(true);
-        } else {
-          const existingDropdown = document.getElementById(
-            SELECTORS.DROPDOWN_CONTAINER
-          );
-          if (existingDropdown && existingDropdown.parentNode) {
-            existingDropdown.parentNode.removeChild(existingDropdown);
-          }
+          this.isDropdownOpen = true;
         }
       });
       this.container.appendChild(this.toggleButton);
@@ -1509,6 +1514,16 @@
         this.container.id = SELECTORS.DROPDOWN_CONTAINER;
         this.container.setAttribute("data-no-translate", "true");
         this.container.style.position = "fixed";
+      }
+      if (fromToggle && this.toggleButton) {
+        const toggleRect = this.toggleButton.getBoundingClientRect();
+        this.container.style.position = "fixed";
+        this.container.style.bottom = `${
+          window.innerHeight - toggleRect.top + 8
+        }px`;
+        this.container.style.right = `${
+          window.innerWidth - toggleRect.right
+        }px`;
       }
       this.applyStoredPosition();
       this.createDragHandle();
@@ -1533,6 +1548,17 @@
           );
         }
       }
+      const clickOutsideHandler = (e) => {
+        if (
+          this.container &&
+          !this.container.contains(e.target) &&
+          this.toggleButton &&
+          !this.toggleButton.contains(e.target)
+        ) {
+          e.stopPropagation();
+        }
+      };
+      document.addEventListener("click", clickOutsideHandler);
       if (this.container) {
         this.container.addEventListener(
           "touchstart",
