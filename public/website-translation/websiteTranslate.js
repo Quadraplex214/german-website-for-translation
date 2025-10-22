@@ -684,7 +684,7 @@
         (tag == null ? void 0 : tag.dataset.domain) || window.location.host;
       const domain = DomUtils.normalizeDomain(rawDomain);
       const apiKey = (tag == null ? void 0 : tag.dataset.apiKey) || "";
-      let toggle = ((tag == null ? void 0 : tag.dataset.toggle) || "off")
+      let toggle = "true")
         .toString()
         .trim()
         .toLowerCase();
@@ -3210,7 +3210,7 @@
     const domain = DomUtils.normalizeDomain(rawDomain);
     const apiKey = (tag == null ? void 0 : tag.dataset.apiKey) || "";
     const theme = (tag == null ? void 0 : tag.dataset.theme) || "dark";
-    const toggle = (tag == null ? void 0 : tag.dataset.toggle) || "off";
+    const toggle = "on";
     return { apiKey, domain, theme };
   })();
   (async () => {
