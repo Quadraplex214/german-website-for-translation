@@ -46,7 +46,7 @@ export default function RootLayout({
         <Script
           src="/website-translation/websiteTranslate.js"
           data-api-key="wt_b9ed8167461c4295_zPUY-o__Npqvgakacn13sA"
-          data-toggle="yes"
+          data-camb-toggle="yes"
         />
       </body>
     </html>
