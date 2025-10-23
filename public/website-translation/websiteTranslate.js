@@ -1042,6 +1042,9 @@
               ? "Translation is in progress"
               : "Translation service unavailable"
           );
+          console.log("Populate Select", this.populateLanguageList);
+          console.log("Toggle?", this.toggleLanguageList);
+          console.log("Language List", this.languageList);
         } else {
           this.iconButton.removeAttribute("title");
         }
