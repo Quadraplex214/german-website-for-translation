@@ -946,13 +946,18 @@
         this.startDragging(touch.clientX, touch.clientY);
         e.preventDefault();
       };
-      this.toggleLanguageList = (_e) => {
-        if (
-          !this.container ||
-          this.options.isTranslating ||
-          this.options.disabled
-        )
+      this.handleContainerClick = (e) => {
+        if (this.isDragging) {
+          this.isDragging = false;
           return;
+        }
+        if (this.options.isTranslating || this.options.disabled) return;
+        const target = e.target;
+        if (target.closest("a, svg, path") !== null) return;
+        this.toggleLanguageList(e);
+      };
+      this.toggleLanguageList = (e) => {
+        if (!this.container) return;
         if (this.isDragging) {
           this.isDragging = false;
           return;
@@ -961,6 +966,10 @@
         this.container.classList.toggle("expanded", this.isExpanded);
         if (this.isExpanded && this.container && this.languageList) {
           this.positionLanguageList();
+        }
+        if (e) {
+          e.preventDefault();
+          e.stopPropagation();
         }
       };
       this.positionLanguageList = () => {
@@ -1293,11 +1302,11 @@
                 </g>
             </svg>
         `;
-      this.iconButton.addEventListener("mousedown", this.handleMouseDown);
-      this.iconButton.addEventListener("touchstart", this.handleTouchStart, {
+      this.container.addEventListener("mousedown", this.handleMouseDown);
+      this.container.addEventListener("touchstart", this.handleTouchStart, {
         passive: false,
       });
-      this.iconButton.addEventListener("click", this.toggleLanguageList);
+      this.container.addEventListener("click", this.handleContainerClick);
       this.languageList = document.createElement("div");
       this.languageList.classList.add("language-list");
       this.populateLanguageList();
