@@ -1049,6 +1049,7 @@
           this.populateLanguageList();
         } else {
           this.iconButton.removeAttribute("title");
+          this.populateLanguageList();
         }
       }
     }
