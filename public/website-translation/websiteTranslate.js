@@ -1042,9 +1042,6 @@
               ? "Translation is in progress"
               : "Translation service unavailable"
           );
-          console.log("Populate Select", this.populateLanguageList);
-          console.log("Toggle?", this.toggleLanguageList);
-          console.log("Language List", this.languageList);
         } else {
           this.iconButton.removeAttribute("title");
         }
@@ -1160,6 +1157,13 @@
 
             #${SELECTORS.POWERED_BY}:hover {
                 background: var(--tl-powered-bg-hover, rgba(0,0,0,0.08)) !important;
+            }
+
+            #${SELECTORS.DROPDOWN_CONTAINER} .language-list .translation-status {
+                text-align: center;
+                font-style: italic;
+                padding: 12px;
+                color: var(--tl-color-muted, #888);
             }
         `;
     }
@@ -1297,6 +1301,23 @@
         currentLang,
         translatedDropdownLabels = {},
       } = this.options;
+      this.languageList.innerHTML = "";
+      if (this.options.isTranslating || this.options.disabled) {
+        const statusOption = document.createElement("div");
+        statusOption.classList.add("language-option", "translation-status");
+        statusOption.setAttribute("data-no-translate", "true");
+        statusOption.textContent = this.options.isTranslating
+          ? "Language being translated..."
+          : "Translation service unavailable";
+        statusOption.style.cursor = "default";
+        statusOption.style.opacity = "0.6";
+        statusOption.style.pointerEvents = "none";
+        this.languageList.appendChild(statusOption);
+        if (this.poweredByLink) {
+          this.languageList.appendChild(this.poweredByLink);
+        }
+        return;
+      }
       const sourceLanguage = config.defaultLang;
       const available = new Set(
         [...config.targetLanguages, sourceLanguage].filter(Boolean)
@@ -1319,7 +1340,6 @@
           }
         });
       }
-      this.languageList.innerHTML = "";
       allLanguages.forEach((l) => {
         var _a;
         const option = document.createElement("div");
