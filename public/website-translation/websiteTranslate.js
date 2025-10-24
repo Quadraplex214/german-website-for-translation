@@ -929,8 +929,6 @@
       this.poweredByLink = null;
       this.isExpanded = false;
       this.isDragging = false;
-      this.dragStartX = 0;
-      this.dragStartY = 0;
       this.handleMouseDown = (e) => {
         if (
           this.isExpanded ||
@@ -942,38 +940,44 @@
         const target = e.target;
         const isInteractiveElement = target.closest("svg, path") !== null;
         if (isInteractiveElement) return;
+        const rect = this.container.getBoundingClientRect();
+        const offsetX = e.clientX - rect.left;
+        const offsetY = e.clientY - rect.top;
         this.isDragging = true;
         this.container.style.cursor = "grabbing";
-        const rect = this.container.getBoundingClientRect();
-        this.dragStartX = e.clientX - rect.left;
-        this.dragStartY = e.clientY - rect.top;
+        this.container.style.transition = "none";
+        const mouseMoveHandler = (moveEvent) => {
+          if (!this.isDragging || this.isExpanded || !this.container) return;
+          const newX = moveEvent.clientX - offsetX;
+          const newY = moveEvent.clientY - offsetY;
+          const clamped = this.constrainToViewport(newX, newY);
+          this.container.style.left = `${clamped.x}px`;
+          this.container.style.top = `${clamped.y}px`;
+          this.container.style.right = "auto";
+          this.container.style.bottom = "auto";
+          moveEvent.preventDefault();
+        };
+        const mouseUpHandler = () => {
+          if (!this.isDragging) return;
+          this.isDragging = false;
+          if (this.container) {
+            this.container.style.cursor = "move";
+            this.container.style.transition = "";
+            const finalRect = this.container.getBoundingClientRect();
+            localStorage.setItem(
+              "camb_dropdown_position",
+              JSON.stringify({
+                x: finalRect.left,
+                y: finalRect.top,
+              })
+            );
+          }
+          document.removeEventListener("mousemove", mouseMoveHandler);
+          document.removeEventListener("mouseup", mouseUpHandler);
+        };
+        document.addEventListener("mousemove", mouseMoveHandler);
+        document.addEventListener("mouseup", mouseUpHandler);
         e.preventDefault();
-        e.stopPropagation();
-      };
-      this.handleMouseMove = (e) => {
-        if (!this.isDragging || this.isExpanded || !this.container) return;
-        const x = e.clientX - this.dragStartX;
-        const y = e.clientY - this.dragStartY;
-        const clamped = this.constrainToViewport(x, y);
-        this.container.style.left = `${clamped.x}px`;
-        this.container.style.top = `${clamped.y}px`;
-        this.container.style.right = "auto";
-        this.container.style.bottom = "auto";
-        e.preventDefault();
-        e.stopPropagation();
-      };
-      this.handleMouseUp = () => {
-        if (!this.isDragging) return;
-        this.isDragging = false;
-        if (this.container) {
-          this.container.style.cursor = "move";
-          this.savePosition({
-            x: parseInt(this.container.style.left, 10),
-            y: parseInt(this.container.style.top, 10),
-          });
-        }
-        document.removeEventListener("mousemove", this.handleMouseMove);
-        document.removeEventListener("mouseup", this.handleMouseUp);
       };
       this.toggleLanguageList = (_e) => {
         if (
@@ -1241,6 +1245,7 @@
       this.container.setAttribute("data-no-translate", "true");
       this.container.style.position = "fixed";
       this.container.style.cursor = "move";
+      this.container.style.transition = "none";
       this.iconButton = document.createElement("button");
       this.iconButton.id = SELECTORS.DROPDOWN;
       this.iconButton.setAttribute("data-no-translate", "true");
@@ -1263,17 +1268,7 @@
                 </g>
             </svg>
         `;
-      this.iconButton.addEventListener("mousedown", (e) => {
-        if (
-          this.isExpanded ||
-          this.options.isTranslating ||
-          this.options.disabled
-        )
-          return;
-        document.addEventListener("mousemove", this.handleMouseMove);
-        document.addEventListener("mouseup", this.handleMouseUp);
-        this.handleMouseDown(e);
-      });
+      this.iconButton.addEventListener("mousedown", this.handleMouseDown);
       this.iconButton.addEventListener("click", this.toggleLanguageList);
       this.languageList = document.createElement("div");
       this.languageList.classList.add("language-list");
@@ -1293,6 +1288,21 @@
       }
       document.body.appendChild(this.container);
     }
+    restorePosition() {
+      if (!this.container) return;
+      try {
+        const positionStr = localStorage.getItem("camb_dropdown_position");
+        const position = positionStr ? JSON.parse(positionStr) : null;
+        if (position) {
+          this.container.style.left = `${position.x}px`;
+          this.container.style.top = `${position.y}px`;
+          this.container.style.right = "auto";
+          this.container.style.bottom = "auto";
+        }
+      } catch (error) {
+        console.error("Failed to load dropdown position", error);
+      }
+    }
     constrainToViewport(x, y) {
       if (!this.container) return { x, y };
       const dropdownWidth = this.container.offsetWidth;
@@ -1306,36 +1316,6 @@
         x: Math.max(minMargin, Math.min(x, maxX)),
         y: Math.max(minMargin, Math.min(y, maxY)),
       };
-    }
-    restorePosition() {
-      if (!this.container) return;
-      const position = this.loadPosition();
-      if (position) {
-        this.container.style.left = position.x + "px";
-        this.container.style.top = position.y + "px";
-        this.container.style.right = "auto";
-        this.container.style.bottom = "auto";
-      }
-    }
-    // Local storage methods
-    savePosition(position) {
-      try {
-        localStorage.setItem(
-          "camb_dropdown_position",
-          JSON.stringify(position)
-        );
-      } catch (error) {
-        console.error("Failed to save dropdown position", error);
-      }
-    }
-    loadPosition() {
-      try {
-        const positionStr = localStorage.getItem("camb_dropdown_position");
-        return positionStr ? JSON.parse(positionStr) : null;
-      } catch (error) {
-        console.error("Failed to load dropdown position", error);
-        return null;
-      }
     }
     populateLanguageList() {
       if (!this.languageList) return;
