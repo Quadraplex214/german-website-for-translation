@@ -1046,6 +1046,7 @@
               : "Translation service unavailable"
           );
           this.populateLanguageList();
+          this.positionLanguageList();
         } else {
           this.iconButton.removeAttribute("title");
           this.populateLanguageList();
