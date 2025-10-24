@@ -9,6 +9,8 @@
     DROPDOWN_CONTAINER: "tl-dropdown-container",
     DROPDOWN_STYLE: "tl-dropdown-style",
     DROPDOWN: "tl-dropdown",
+    DRAG_HANDLE: "tl-drag-handle",
+    RESET_HANDLE: "tl-reset-handle",
     POWERED_BY: "tl-powered-by",
   };
   const ATTRIBUTES = {
@@ -929,8 +931,8 @@
       this.poweredByLink = null;
       this.isExpanded = false;
       this.isDragging = false;
-      this.dragStartX = 0;
-      this.dragStartY = 0;
+      this.dragOffsetX = 0;
+      this.dragOffsetY = 0;
       this.handleMouseDown = (e) => {
         if (
           this.isExpanded ||
@@ -940,34 +942,95 @@
           return;
         if (!this.container) return;
         const target = e.target;
-        const isInteractiveElement = target.closest("svg, path") !== null;
+        const isInteractiveElement = target.closest("svg, path, a") !== null;
         if (isInteractiveElement) return;
         this.isDragging = true;
-        this.container.style.cursor = "grabbing";
         const rect = this.container.getBoundingClientRect();
-        this.dragStartX = e.clientX - rect.left;
-        this.dragStartY = e.clientY - rect.top;
+        this.dragOffsetX = e.clientX - rect.left;
+        this.dragOffsetY = e.clientY - rect.top;
+        document.addEventListener("mousemove", this.handleMouseMove);
+        document.addEventListener("mouseup", this.handleMouseUp);
         e.preventDefault();
       };
       this.handleMouseMove = (e) => {
         if (!this.isDragging || this.isExpanded || !this.container) return;
-        const x = e.clientX - this.dragStartX;
-        const y = e.clientY - this.dragStartY;
+        const x = e.clientX - this.dragOffsetX;
+        const y = e.clientY - this.dragOffsetY;
         const clamped = this.constrainToViewport(x, y);
-        this.container.style.left = `${clamped.x}px`;
-        this.container.style.top = `${clamped.y}px`;
+        this.container.style.left = clamped.x + "px";
+        this.container.style.top = clamped.y + "px";
         this.container.style.right = "auto";
         this.container.style.bottom = "auto";
       };
       this.handleMouseUp = () => {
         if (!this.isDragging) return;
         this.isDragging = false;
+        document.removeEventListener("mousemove", this.handleMouseMove);
+        document.removeEventListener("mouseup", this.handleMouseUp);
         if (this.container) {
-          this.container.style.cursor = "move";
-          this.savePosition({
-            x: parseInt(this.container.style.left, 10),
-            y: parseInt(this.container.style.top, 10),
-          });
+          const rect = this.container.getBoundingClientRect();
+          localStorage.setItem(
+            "camb_dropdown_position",
+            JSON.stringify({ x: rect.left, y: rect.top })
+          );
+        }
+      };
+      this.handleTouchStart = (e) => {
+        if (
+          this.isExpanded ||
+          this.options.isTranslating ||
+          this.options.disabled
+        )
+          return;
+        if (!this.container) return;
+        const target = e.target;
+        if (target.id === SELECTORS.RESET_HANDLE) return;
+        const isInteractiveElement =
+          target.closest("select, option, a") !== null;
+        if (isInteractiveElement) return;
+        this.isDragging = true;
+        const touch = e.touches[0];
+        const rect = this.container.getBoundingClientRect();
+        this.dragOffsetX = touch.clientX - rect.left;
+        this.dragOffsetY = touch.clientY - rect.top;
+        e.preventDefault();
+      };
+      this.handleTouchMove = (e) => {
+        if (
+          !this.isDragging ||
+          this.isExpanded ||
+          !this.container ||
+          e.touches.length !== 1
+        )
+          return;
+        const touch = e.touches[0];
+        const x = touch.clientX - this.dragOffsetX;
+        const y = touch.clientY - this.dragOffsetY;
+        const clamped = this.constrainToViewport(x, y);
+        this.container.style.left = clamped.x + "px";
+        this.container.style.top = clamped.y + "px";
+        this.container.style.right = "auto";
+        this.container.style.bottom = "auto";
+        e.preventDefault();
+      };
+      this.handleTouchEnd = () => {
+        if (!this.isDragging) return;
+        this.isDragging = false;
+        if (this.container) {
+          const rect = this.container.getBoundingClientRect();
+          localStorage.setItem(
+            "camb_dropdown_position",
+            JSON.stringify({ x: rect.left, y: rect.top })
+          );
+        }
+      };
+      this.handleResetPosition = () => {
+        if (this.container) {
+          localStorage.removeItem("camb_dropdown_position");
+          this.container.style.left = "auto";
+          this.container.style.top = "auto";
+          this.container.style.right = "24px";
+          this.container.style.bottom = "24px";
         }
       };
       this.toggleLanguageList = (_e) => {
@@ -1234,21 +1297,36 @@
       this.container = document.createElement("div");
       this.container.id = SELECTORS.DROPDOWN_CONTAINER;
       this.container.setAttribute("data-no-translate", "true");
+      this.container.style.position = "fixed";
+      this.applyStoredPosition();
+      this.createDragHandle();
+      this.createResetHandle();
       this.iconButton = document.createElement("button");
       this.iconButton.id = SELECTORS.DROPDOWN;
       this.iconButton.setAttribute("data-no-translate", "true");
       this.iconButton.innerHTML = `
-            <svg width="20px" height="20px" viewBox="0 0 24 24" id="Layer_1" data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" fill="#ffffff" stroke="#ffffff"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"><defs><style>.cls-1{fill:none;stroke:#ffffff;stroke-miterlimit:10;stroke-width:1.92px;}</style></defs><line class="cls-1" x1="0.5" y1="3.35" x2="12" y2="3.35"></line><line class="cls-1" x1="6.25" y1="0.48" x2="6.25" y2="3.35"></line><path class="cls-1" d="M9.12,3.35c0,3.52-3.28,8.2-7.66,10.55"></path><path class="cls-1" d="M4.51,7.37A16.4,16.4,0,0,0,11,13.9"></path><polyline class="cls-1" points="12.96 22.52 16.79 11.98 17.75 11.98 21.58 22.52"></polyline><line class="cls-1" x1="20.43" y1="18.69" x2="15.07" y2="18.69"></line><line class="cls-1" x1="11.04" y1="22.52" x2="14.88" y2="22.52"></line><line class="cls-1" x1="19.67" y1="22.52" x2="23.5" y2="22.52"></line></g></svg>
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M2 5h12"/><path d="M9 18h4"/><path d="M10 10m-7 0a7 7 0 1 0 14 0a7 7 0 1 0 -14 0"/><path d="M22 22l-5 -5"/><path d="M17 22l5 -5"/>
+            </svg>
         `;
-      this.iconButton.addEventListener("mousedown", this.handleMouseDown);
-      this.iconButton.addEventListener("click", this.toggleLanguageList);
+      this.container.addEventListener("mousedown", this.handleMouseDown);
       this.languageList = document.createElement("div");
       this.languageList.classList.add("language-list");
-      this.createPoweredByLink();
       this.populateLanguageList();
+      this.createPoweredByLink();
       this.container.appendChild(this.iconButton);
       this.container.appendChild(this.languageList);
-      this.restorePosition();
+      if (this.poweredByLink) {
+        this.container.appendChild(this.poweredByLink);
+      }
+      this.container.addEventListener("touchstart", this.handleTouchStart, {
+        passive: false,
+      });
+      document.addEventListener("touchmove", this.handleTouchMove, {
+        passive: false,
+      });
+      document.addEventListener("touchend", this.handleTouchEnd);
+      document.body.appendChild(this.container);
       if (this.options.isTranslating || this.options.disabled) {
         this.iconButton.disabled = true;
         this.iconButton.setAttribute(
@@ -1258,54 +1336,46 @@
             : "Translation service unavailable"
         );
       }
-      document.addEventListener("mousemove", this.handleMouseMove);
-      document.addEventListener("mouseup", this.handleMouseUp);
-      this.setupResizeHandler();
-      document.body.appendChild(this.container);
+      this.iconButton.addEventListener("click", this.toggleLanguageList);
     }
-    constrainToViewport(x, y) {
-      if (!this.container) return { x, y };
-      const dropdownWidth = this.container.offsetWidth;
-      const dropdownHeight = this.container.offsetHeight;
-      const viewportWidth = window.innerWidth;
-      const viewportHeight = window.innerHeight;
-      const minMargin = 24;
-      const maxX = viewportWidth - dropdownWidth - minMargin;
-      const maxY = viewportHeight - dropdownHeight - minMargin;
-      return {
-        x: Math.max(minMargin, Math.min(x, maxX)),
-        y: Math.max(minMargin, Math.min(y, maxY)),
-      };
-    }
-    restorePosition() {
+    applyStoredPosition() {
       if (!this.container) return;
-      const position = this.loadPosition();
-      if (position) {
-        this.container.style.left = position.x + "px";
-        this.container.style.top = position.y + "px";
-        this.container.style.right = "auto";
-        this.container.style.bottom = "auto";
-      }
-    }
-    // Local storage methods
-    savePosition(position) {
-      try {
-        localStorage.setItem(
-          "camb_dropdown_position",
-          JSON.stringify(position)
-        );
-      } catch (error) {
-        console.error("Failed to save dropdown position", error);
-      }
-    }
-    loadPosition() {
       try {
         const positionStr = localStorage.getItem("camb_dropdown_position");
-        return positionStr ? JSON.parse(positionStr) : null;
+        const position = positionStr ? JSON.parse(positionStr) : null;
+        if (position) {
+          this.container.style.left = position.x + "px";
+          this.container.style.top = position.y + "px";
+          this.container.style.right = "auto";
+          this.container.style.bottom = "auto";
+        }
       } catch (error) {
         console.error("Failed to load dropdown position", error);
-        return null;
       }
+    }
+    createDragHandle() {
+      if (!this.container) return;
+      const dragHandle = document.createElement("div");
+      dragHandle.id = SELECTORS.DRAG_HANDLE;
+      dragHandle.setAttribute("data-no-translate", "true");
+      dragHandle.innerHTML = "⋮⋮";
+      dragHandle.title = "Drag to move";
+      this.container.appendChild(dragHandle);
+    }
+    createResetHandle() {
+      if (!this.container) return;
+      const resetHandle = document.createElement("div");
+      resetHandle.id = SELECTORS.RESET_HANDLE;
+      resetHandle.setAttribute("data-no-translate", "true");
+      resetHandle.innerHTML = "⟲";
+      resetHandle.title = "Reset language selector position";
+      this.container.appendChild(resetHandle);
+      resetHandle.addEventListener("click", this.handleResetPosition);
+      resetHandle.addEventListener("touchstart", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        this.handleResetPosition();
+      });
     }
     populateLanguageList() {
       if (!this.languageList) return;
@@ -1399,6 +1469,20 @@
         }
       };
       window.addEventListener("resize", resizeHandler);
+    }
+    constrainToViewport(x, y) {
+      if (!this.container) return { x, y };
+      const dropdownWidth = this.container.offsetWidth;
+      const dropdownHeight = this.container.offsetHeight;
+      const viewportWidth = window.innerWidth;
+      const viewportHeight = window.innerHeight;
+      const minMargin = 24;
+      const maxX = viewportWidth - dropdownWidth - minMargin;
+      const maxY = viewportHeight - dropdownHeight - minMargin;
+      return {
+        x: Math.max(minMargin, Math.min(x, maxX)),
+        y: Math.max(minMargin, Math.min(y, maxY)),
+      };
     }
   }
   const queued = /* @__PURE__ */ new WeakSet();
