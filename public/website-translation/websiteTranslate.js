@@ -1001,14 +1001,13 @@
         } else {
           left = buttonRect.right + 10;
         }
-        let top;
-        const buttonCenterY = buttonRect.top + buttonRect.height / 2;
-        top = buttonCenterY - listHeight / 2;
+        let top = buttonRect.top;
         left = Math.max(10, Math.min(left, viewportWidth - listWidth - 10));
         top = Math.max(10, Math.min(top, viewportHeight - listHeight - 10));
         this.languageList.style.position = "fixed";
         this.languageList.style.left = `${left}px`;
         this.languageList.style.top = `${top}px`;
+        this.languageList.style.minHeight = `${buttonRect.height}px`;
       };
     }
     create() {
@@ -1097,6 +1096,7 @@
             #${SELECTORS.DROPDOWN_CONTAINER} .language-list {
                 display: none;
                 width: 200px;
+                min-height: 50px; /* Match button height */
                 max-height: 300px;
                 overflow-y: auto;
                 background: var(--tl-bg, ${themeColors.bg});
@@ -1170,7 +1170,7 @@
                 background: var(--tl-powered-bg-hover, rgba(0,0,0,0.08)) !important;
             }
 
-            #${SELECTORS.DROPDOWN_CONTAINER} .language-list .translation-status {
+            #${SELECTORS.DROPDOWN_CONTAINER} .language-list .language-option.translation-status {
                 text-align: center;
                 font-style: italic;
                 padding: 12px;
