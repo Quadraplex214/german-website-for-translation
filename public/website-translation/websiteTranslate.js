@@ -952,8 +952,6 @@
           return;
         }
         if (this.options.isTranslating || this.options.disabled) return;
-        const target = e.target;
-        if (target.closest("a, svg, path") !== null) return;
         this.toggleLanguageList(e);
       };
       this.toggleLanguageList = (e) => {
@@ -1054,6 +1052,16 @@
                 background: transparent;
                 transition: all 0.3s ease;
                 cursor: move;
+                width: 50px;
+                height: 50px;
+            }
+
+            #${SELECTORS.DROPDOWN_CONTAINER} svg {
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                pointer-events: none;
             }
 
             #${SELECTORS.DROPDOWN} {
@@ -1283,35 +1291,59 @@
       this.iconButton = document.createElement("button");
       this.iconButton.id = SELECTORS.DROPDOWN;
       this.iconButton.setAttribute("data-no-translate", "true");
-      this.iconButton.innerHTML = `
-            <svg width="20px" height="20px" viewBox="0 0 24 24" id="Layer_1" data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" fill="#ffffff" stroke="#ffffff">
-                <g id="SVGRepo_bgCarrier" stroke-width="0"></g>
-                <g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g>
-                <g id="SVGRepo_iconCarrier">
-                    <defs>
-                        <style>.cls-1{fill:none;stroke:#ffffff;stroke-miterlimit:10;stroke-width:1.92px;}</style>
-                    </defs>
-                    <line class="cls-1" x1="0.5" y1="3.35" x2="12" y2="3.35"></line>
-                    <line class="cls-1" x1="6.25" y1="0.48" x2="6.25" y2="3.35"></line>
-                    <path class="cls-1" d="M9.12,3.35c0,3.52-3.28,8.2-7.66,10.55"></path>
-                    <path class="cls-1" d="M4.51,7.37A16.4,16.4,0,0,0,11,13.9"></path>
-                    <polyline class="cls-1" points="12.96 22.52 16.79 11.98 17.75 11.98 21.58 22.52"></polyline>
-                    <line class="cls-1" x1="20.43" y1="18.69" x2="15.07" y2="18.69"></line>
-                    <line class="cls-1" x1="11.04" y1="22.52" x2="14.88" y2="22.52"></line>
-                    <line class="cls-1" x1="19.67" y1="22.52" x2="23.5" y2="22.52"></line>
-                </g>
-            </svg>
+      this.iconButton.style.width = "100%";
+      this.iconButton.style.height = "100%";
+      this.iconButton.style.position = "absolute";
+      this.iconButton.style.top = "0";
+      this.iconButton.style.left = "0";
+      this.iconButton.style.background = "transparent";
+      this.iconButton.style.border = "none";
+      this.iconButton.style.cursor = "pointer";
+      const iconWrapper = document.createElement("div");
+      iconWrapper.style.width = "50px";
+      iconWrapper.style.height = "50px";
+      iconWrapper.style.position = "relative";
+      iconWrapper.style.display = "flex";
+      iconWrapper.style.alignItems = "center";
+      iconWrapper.style.justifyContent = "center";
+      const svgElement = document.createElementNS(
+        "http://www.w3.org/2000/svg",
+        "svg"
+      );
+      svgElement.setAttribute("width", "20px");
+      svgElement.setAttribute("height", "20px");
+      svgElement.setAttribute("viewBox", "0 0 24 24");
+      svgElement.setAttribute("fill", "#ffffff");
+      svgElement.setAttribute("stroke", "#ffffff");
+      svgElement.innerHTML = `
+            <g id="SVGRepo_bgCarrier" stroke-width="0"></g>
+            <g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g>
+            <g id="SVGRepo_iconCarrier">
+                <defs>
+                    <style>.cls-1{fill:none;stroke:#ffffff;stroke-miterlimit:10;stroke-width:1.92px;}</style>
+                </defs>
+                <line class="cls-1" x1="0.5" y1="3.35" x2="12" y2="3.35"></line>
+                <line class="cls-1" x1="6.25" y1="0.48" x2="6.25" y2="3.35"></line>
+                <path class="cls-1" d="M9.12,3.35c0,3.52-3.28,8.2-7.66,10.55"></path>
+                <path class="cls-1" d="M4.51,7.37A16.4,16.4,0,0,0,11,13.9"></path>
+                <polyline class="cls-1" points="12.96 22.52 16.79 11.98 17.75 11.98 21.58 22.52"></polyline>
+                <line class="cls-1" x1="20.43" y1="18.69" x2="15.07" y2="18.69"></line>
+                <line class="cls-1" x1="11.04" y1="22.52" x2="14.88" y2="22.52"></line>
+                <line class="cls-1" x1="19.67" y1="22.52" x2="23.5" y2="22.52"></line>
+            </g>
         `;
+      iconWrapper.appendChild(this.iconButton);
+      iconWrapper.appendChild(svgElement);
       this.container.addEventListener("mousedown", this.handleMouseDown);
       this.container.addEventListener("touchstart", this.handleTouchStart, {
         passive: false,
       });
-      this.container.addEventListener("click", this.handleContainerClick);
+      this.iconButton.addEventListener("click", this.handleContainerClick);
       this.languageList = document.createElement("div");
       this.languageList.classList.add("language-list");
       this.populateLanguageList();
       this.createPoweredByLink();
-      this.container.appendChild(this.iconButton);
+      this.container.appendChild(iconWrapper);
       this.container.appendChild(this.languageList);
       this.restorePosition();
       if (this.options.isTranslating || this.options.disabled) {
