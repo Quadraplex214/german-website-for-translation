@@ -930,53 +930,20 @@
       this.isExpanded = false;
       this.isDragging = false;
       this.handleMouseDown = (e) => {
+        this.startDragging(e.clientX, e.clientY);
+        e.preventDefault();
+      };
+      this.handleTouchStart = (e) => {
         if (
           this.isExpanded ||
           this.options.isTranslating ||
           this.options.disabled
         )
           return;
-        if (!this.container) return;
         const target = e.target;
-        const isInteractiveElement = target.closest("svg, path") !== null;
-        if (isInteractiveElement) return;
-        const rect = this.container.getBoundingClientRect();
-        const offsetX = e.clientX - rect.left;
-        const offsetY = e.clientY - rect.top;
-        this.isDragging = true;
-        this.container.style.cursor = "grabbing";
-        this.container.style.transition = "none";
-        const mouseMoveHandler = (moveEvent) => {
-          if (!this.isDragging || this.isExpanded || !this.container) return;
-          const newX = moveEvent.clientX - offsetX;
-          const newY = moveEvent.clientY - offsetY;
-          const clamped = this.constrainToViewport(newX, newY);
-          this.container.style.left = `${clamped.x}px`;
-          this.container.style.top = `${clamped.y}px`;
-          this.container.style.right = "auto";
-          this.container.style.bottom = "auto";
-          moveEvent.preventDefault();
-        };
-        const mouseUpHandler = () => {
-          if (!this.isDragging) return;
-          this.isDragging = false;
-          if (this.container) {
-            this.container.style.cursor = "move";
-            this.container.style.transition = "";
-            const finalRect = this.container.getBoundingClientRect();
-            localStorage.setItem(
-              "camb_dropdown_position",
-              JSON.stringify({
-                x: finalRect.left,
-                y: finalRect.top,
-              })
-            );
-          }
-          document.removeEventListener("mousemove", mouseMoveHandler);
-          document.removeEventListener("mouseup", mouseUpHandler);
-        };
-        document.addEventListener("mousemove", mouseMoveHandler);
-        document.addEventListener("mouseup", mouseUpHandler);
+        if (target.closest("a") !== null) return;
+        const touch = e.touches[0];
+        this.startDragging(touch.clientX, touch.clientY);
         e.preventDefault();
       };
       this.toggleLanguageList = (_e) => {
@@ -1239,6 +1206,64 @@
         .join(" ");
       return `${beforeParen} (${insideParen})`;
     }
+    startDragging(clientX, clientY) {
+      if (
+        this.isExpanded ||
+        this.options.isTranslating ||
+        this.options.disabled
+      )
+        return;
+      if (!this.container) return;
+      const rect = this.container.getBoundingClientRect();
+      const offsetX = clientX - rect.left;
+      const offsetY = clientY - rect.top;
+      this.isDragging = true;
+      this.container.style.cursor = "grabbing";
+      this.container.style.transition = "none";
+      const moveHandler = (moveEvent) => {
+        if (!this.isDragging || this.isExpanded || !this.container) return;
+        const currentX =
+          moveEvent instanceof MouseEvent
+            ? moveEvent.clientX
+            : moveEvent.touches[0].clientX;
+        const currentY =
+          moveEvent instanceof MouseEvent
+            ? moveEvent.clientY
+            : moveEvent.touches[0].clientY;
+        const newX = currentX - offsetX;
+        const newY = currentY - offsetY;
+        const clamped = this.constrainToViewport(newX, newY);
+        this.container.style.left = `${clamped.x}px`;
+        this.container.style.top = `${clamped.y}px`;
+        this.container.style.right = "auto";
+        this.container.style.bottom = "auto";
+        moveEvent.preventDefault();
+      };
+      const endHandler = () => {
+        if (!this.isDragging) return;
+        this.isDragging = false;
+        if (this.container) {
+          this.container.style.cursor = "move";
+          this.container.style.transition = "";
+          const finalRect = this.container.getBoundingClientRect();
+          localStorage.setItem(
+            "camb_dropdown_position",
+            JSON.stringify({
+              x: finalRect.left,
+              y: finalRect.top,
+            })
+          );
+        }
+        document.removeEventListener("mousemove", moveHandler);
+        document.removeEventListener("mouseup", endHandler);
+        document.removeEventListener("touchmove", moveHandler);
+        document.removeEventListener("touchend", endHandler);
+      };
+      document.addEventListener("mousemove", moveHandler);
+      document.addEventListener("mouseup", endHandler);
+      document.addEventListener("touchmove", moveHandler, { passive: false });
+      document.addEventListener("touchend", endHandler);
+    }
     createContainer() {
       this.container = document.createElement("div");
       this.container.id = SELECTORS.DROPDOWN_CONTAINER;
@@ -1269,6 +1294,9 @@
             </svg>
         `;
       this.iconButton.addEventListener("mousedown", this.handleMouseDown);
+      this.iconButton.addEventListener("touchstart", this.handleTouchStart, {
+        passive: false,
+      });
       this.iconButton.addEventListener("click", this.toggleLanguageList);
       this.languageList = document.createElement("div");
       this.languageList.classList.add("language-list");
