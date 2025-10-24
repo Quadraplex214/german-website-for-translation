@@ -1050,6 +1050,7 @@
         } else {
           this.iconButton.removeAttribute("title");
           this.populateLanguageList();
+          this.positionLanguageList();
         }
       }
     }
