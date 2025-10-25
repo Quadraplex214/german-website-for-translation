@@ -87,7 +87,7 @@ export default function GermanHeroFood() {
 
   return (
     <div className="w-full">
-      <Navbar />
+      {/* <Navbar /> */}
 
       {/* Hero Section */}
       <div
