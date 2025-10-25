@@ -977,12 +977,11 @@
         e.stopPropagation();
       };
       this.handleMouseUp = () => {
-        var _a;
         document.removeEventListener("mousemove", this.handleMouseMove);
         document.removeEventListener("mouseup", this.handleMouseUp);
         if (!this.container) return;
         if (!this.isDragging) {
-          (_a = this.iconButton) == null ? void 0 : _a.click();
+          this.toggleLanguageList(new MouseEvent("click"));
           return;
         }
         this.isDragging = false;
@@ -1045,12 +1044,11 @@
         e.preventDefault();
       };
       this.handleTouchEnd = () => {
-        var _a;
         document.removeEventListener("touchmove", this.handleTouchMove);
         document.removeEventListener("touchend", this.handleTouchEnd);
         if (!this.container) return;
         if (!this.isDragging) {
-          (_a = this.iconButton) == null ? void 0 : _a.click();
+          this.toggleLanguageList(new MouseEvent("click"));
           return;
         }
         this.isDragging = false;
