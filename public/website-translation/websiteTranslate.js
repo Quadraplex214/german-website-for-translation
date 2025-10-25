@@ -939,8 +939,8 @@
           return;
         if (!this.container) return;
         const target = e.target;
-        const isInteractiveElement = target.closest("a, svg") !== null;
-        if (isInteractiveElement) return;
+        const isLink = target.closest("a") !== null;
+        if (isLink) return;
         this.dragStartX = e.clientX;
         this.dragStartY = e.clientY;
         this.isDragging = false;
@@ -1005,8 +1005,8 @@
           return;
         if (!this.container) return;
         const target = e.target;
-        const isInteractiveElement = target.closest("a, svg") !== null;
-        if (isInteractiveElement) return;
+        const isLink = target.closest("a") !== null;
+        if (isLink) return;
         const touch = e.touches[0];
         this.dragStartX = touch.clientX;
         this.dragStartY = touch.clientY;
@@ -2952,4 +2952,4 @@
     await translationEngine.initialize();
   })();
 })();
-
+//# sourceMappingURL=translator.dev.js.map
