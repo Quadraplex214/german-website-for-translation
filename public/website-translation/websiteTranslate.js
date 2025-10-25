@@ -1108,8 +1108,8 @@
       svgElement.setAttribute("width", "20px");
       svgElement.setAttribute("height", "20px");
       svgElement.setAttribute("viewBox", "0 0 24 24");
-      svgElement.setAttribute("fill", "currentColor");
-      svgElement.setAttribute("stroke", "currentColor");
+      svgElement.setAttribute("fill", "white");
+      svgElement.setAttribute("stroke", "white");
       svgElement.style.marginLeft = "8px";
       svgElement.innerHTML = `
             <g id="SVGRepo_bgCarrier" stroke-width="0"></g>
@@ -1129,7 +1129,6 @@
             </g>
         `;
       this.iconButton.innerHTML = "";
-      this.iconButton.appendChild(languageSpan);
       this.iconButton.appendChild(svgElement);
     }
     update(newOptions) {
