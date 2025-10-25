@@ -930,6 +930,7 @@
       this.isDragging = false;
       this.dragStartX = 0;
       this.dragStartY = 0;
+      this.dragTimer = null;
       this.handleMouseDown = (e) => {
         if (
           this.isExpanded ||
@@ -944,12 +945,19 @@
         this.dragStartX = e.clientX;
         this.dragStartY = e.clientY;
         this.isDragging = false;
+        this.dragTimer = window.setTimeout(() => {
+          this.isDragging = true;
+        }, 200);
         document.addEventListener("mousemove", this.handleMouseMove);
         document.addEventListener("mouseup", this.handleMouseUp);
         e.preventDefault();
         e.stopPropagation();
       };
       this.handleMouseMove = (e) => {
+        if (this.dragTimer) {
+          clearTimeout(this.dragTimer);
+          this.dragTimer = null;
+        }
         if (!this.container) return;
         const dragThreshold = 5;
         const deltaX = Math.abs(e.clientX - this.dragStartX);
@@ -977,6 +985,10 @@
         e.stopPropagation();
       };
       this.handleMouseUp = () => {
+        if (this.dragTimer) {
+          clearTimeout(this.dragTimer);
+          this.dragTimer = null;
+        }
         document.removeEventListener("mousemove", this.handleMouseMove);
         document.removeEventListener("mouseup", this.handleMouseUp);
         if (!this.container) return;
@@ -1010,6 +1022,9 @@
         this.dragStartX = touch.clientX;
         this.dragStartY = touch.clientY;
         this.isDragging = false;
+        this.dragTimer = window.setTimeout(() => {
+          this.isDragging = true;
+        }, 200);
         document.addEventListener("touchmove", this.handleTouchMove, {
           passive: false,
         });
@@ -1017,6 +1032,10 @@
         e.preventDefault();
       };
       this.handleTouchMove = (e) => {
+        if (this.dragTimer) {
+          clearTimeout(this.dragTimer);
+          this.dragTimer = null;
+        }
         if (!this.container) return;
         const touch = e.touches[0];
         const dragThreshold = 5;
@@ -1044,6 +1063,10 @@
         e.preventDefault();
       };
       this.handleTouchEnd = () => {
+        if (this.dragTimer) {
+          clearTimeout(this.dragTimer);
+          this.dragTimer = null;
+        }
         document.removeEventListener("touchmove", this.handleTouchMove);
         document.removeEventListener("touchend", this.handleTouchEnd);
         if (!this.container) return;
