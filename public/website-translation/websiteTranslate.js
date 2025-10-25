@@ -1082,24 +1082,6 @@
           });
         }
       };
-      this.handleWindowResize = () => {
-        if (!this.container) return;
-        const rect = this.container.getBoundingClientRect();
-        const clamped = this.constrainToViewport(rect.left, rect.top);
-        if (
-          Math.round(rect.left) !== Math.round(clamped.x) ||
-          Math.round(rect.top) !== Math.round(clamped.y)
-        ) {
-          this.container.style.left = `${clamped.x}px`;
-          this.container.style.top = `${clamped.y}px`;
-          this.container.style.right = "auto";
-          this.container.style.bottom = "auto";
-          this.savePosition({ x: clamped.x, y: clamped.y });
-        }
-        if (this.isExpanded) {
-          this.positionLanguageList();
-        }
-      };
       this.toggleLanguageList = (_e) => {
         if (
           !this.container ||
@@ -1154,8 +1136,6 @@
       if (existing) existing.remove();
       const style = document.getElementById(SELECTORS.DROPDOWN_STYLE);
       if (style) style.remove();
-      window.removeEventListener("resize", this.handleWindowResize);
-      window.removeEventListener("orientationchange", this.handleWindowResize);
       this.container = null;
       this.iconButton = null;
       this.languageList = null;
@@ -1293,11 +1273,11 @@
                 overflow: hidden;
                 text-overflow: ellipsis;
             }
-            
+
             #${SELECTORS.DROPDOWN_CONTAINER} .language-list .language-option:hover {
                 background-color: var(--tl-bg-hover, ${themeColors.bgHover});
             }
-            
+
             #${SELECTORS.DROPDOWN_CONTAINER} .language-list .language-option.selected {
                 background-color: var(--tl-selected-bg, rgba(0,0,0,0.1));
                 font-weight: bold;
@@ -1414,21 +1394,11 @@
     restorePosition() {
       if (!this.container) return;
       const position = this.loadPosition();
-      const isValidSaved =
-        position &&
-        Number.isFinite(position.x) &&
-        Number.isFinite(position.y) &&
-        !(Math.round(position.x) === 0 && Math.round(position.y) === 0);
-      if (isValidSaved) {
+      if (position) {
         this.container.style.left = `${position.x}px`;
         this.container.style.top = `${position.y}px`;
         this.container.style.right = "auto";
         this.container.style.bottom = "auto";
-      } else {
-        this.container.style.left = "auto";
-        this.container.style.top = "auto";
-        this.container.style.right = "24px";
-        this.container.style.bottom = "24px";
       }
     }
     // Local storage methods
@@ -1618,20 +1588,6 @@
       this.container.appendChild(iconWrapper);
       this.container.appendChild(this.languageList);
       this.restorePosition();
-      if (
-        !this.container.style.left &&
-        !this.container.style.top &&
-        !this.container.style.right &&
-        !this.container.style.bottom
-      ) {
-        this.container.style.left = "auto";
-        this.container.style.top = "auto";
-        this.container.style.right = "24px";
-        this.container.style.bottom = "24px";
-      }
-      window.addEventListener("resize", this.handleWindowResize);
-      window.addEventListener("orientationchange", this.handleWindowResize);
-      this.handleWindowResize();
       if (this.options.isTranslating || this.options.disabled) {
         this.iconButton.disabled = true;
         this.iconButton.setAttribute(
