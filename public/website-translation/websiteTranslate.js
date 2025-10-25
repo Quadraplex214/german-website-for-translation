@@ -945,9 +945,6 @@
         this.dragStartX = e.clientX;
         this.dragStartY = e.clientY;
         this.isDragging = false;
-        this.dragTimer = window.setTimeout(() => {
-          this.isDragging = true;
-        }, 200);
         document.addEventListener("mousemove", this.handleMouseMove);
         document.addEventListener("mouseup", this.handleMouseUp);
         e.preventDefault();
@@ -1576,7 +1573,10 @@
       this.container.addEventListener("touchstart", this.handleTouchStart, {
         passive: false,
       });
-      this.iconButton.addEventListener("click", this.toggleLanguageList);
+      this.iconButton.addEventListener("click", (e) => {
+        e.stopPropagation();
+        this.toggleLanguageList(e);
+      });
       this.languageList = document.createElement("div");
       this.languageList.classList.add("language-list");
       this.populateLanguageList();
