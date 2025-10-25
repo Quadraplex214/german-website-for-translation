@@ -121,10 +121,10 @@
         const retryButton = document.createElement("button");
         retryButton.textContent = "Retry";
         retryButton.style.cssText = `
-                background: white; color: #dc2626; border: none;
-                padding: 4px 12px; border-radius: 4px; cursor: pointer;
-                font-size: 12px; font-weight: 500; margin-top: 4px;
-            `;
+              background: white; color: #dc2626; border: none;
+              padding: 4px 12px; border-radius: 4px; cursor: pointer;
+              font-size: 12px; font-weight: 500; margin-top: 4px;
+          `;
         retryButton.onclick = () => {
           errorDiv.remove();
           retryCallback();
@@ -132,11 +132,11 @@
         errorContent.appendChild(retryButton);
       }
       errorDiv.style.cssText = `
-            position: fixed; bottom: 24px; right: 24px; z-index: 9999;
-            background: #dc2626; color: white; padding: 12px 16px;
-            border-radius: 8px; font: 14px/1.4 sans-serif;
-            max-width: 320px; box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-        `;
+          position: fixed; bottom: 24px; right: 24px; z-index: 9999;
+          background: #dc2626; color: white; padding: 12px 16px;
+          border-radius: 8px; font: 14px/1.4 sans-serif;
+          max-width: 320px; box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      `;
       errorDiv.appendChild(errorContent);
       document.body.appendChild(errorDiv);
       const duration =
@@ -929,33 +929,63 @@
       this.poweredByLink = null;
       this.isExpanded = false;
       this.isDragging = false;
+      this.dragStartX = 0;
+      this.dragStartY = 0;
       this.handleMouseDown = (e) => {
-        this.startDragging(e.clientX, e.clientY);
-        e.preventDefault();
-      };
-      this.handleTouchStart = (e) => {
         if (
           this.isExpanded ||
           this.options.isTranslating ||
           this.options.disabled
         )
           return;
-        const target = e.target;
-        if (target.closest("a") !== null) return;
-        const touch = e.touches[0];
-        this.startDragging(touch.clientX, touch.clientY);
-        e.preventDefault();
-      };
-      this.handleContainerClick = (e) => {
-        if (this.isDragging) {
-          this.isDragging = false;
-          return;
-        }
-        if (this.options.isTranslating || this.options.disabled) return;
-        this.toggleLanguageList(e);
-      };
-      this.toggleLanguageList = (e) => {
         if (!this.container) return;
+        const target = e.target;
+        const isInteractiveElement = target.closest("svg, path") !== null;
+        if (isInteractiveElement) return;
+        const rect = this.container.getBoundingClientRect();
+        this.dragStartX = e.clientX - rect.left;
+        this.dragStartY = e.clientY - rect.top;
+        this.isDragging = true;
+        this.container.style.cursor = "grabbing";
+        this.container.style.transition = "none";
+        document.addEventListener("mousemove", this.handleMouseMove);
+        document.addEventListener("mouseup", this.handleMouseUp);
+        e.preventDefault();
+        e.stopPropagation();
+      };
+      this.handleMouseMove = (e) => {
+        if (!this.isDragging || this.isExpanded || !this.container) return;
+        const newX = e.clientX - this.dragStartX;
+        const newY = e.clientY - this.dragStartY;
+        const clamped = this.constrainToViewport(newX, newY);
+        this.container.style.left = `${clamped.x}px`;
+        this.container.style.top = `${clamped.y}px`;
+        this.container.style.right = "auto";
+        this.container.style.bottom = "auto";
+        e.preventDefault();
+        e.stopPropagation();
+      };
+      this.handleMouseUp = () => {
+        if (!this.isDragging) return;
+        this.isDragging = false;
+        if (this.container) {
+          this.container.style.cursor = "move";
+          this.container.style.transition = "";
+          this.savePosition({
+            x: parseInt(this.container.style.left, 10),
+            y: parseInt(this.container.style.top, 10),
+          });
+        }
+        document.removeEventListener("mousemove", this.handleMouseMove);
+        document.removeEventListener("mouseup", this.handleMouseUp);
+      };
+      this.toggleLanguageList = (_e) => {
+        if (
+          !this.container ||
+          this.options.isTranslating ||
+          this.options.disabled
+        )
+          return;
         if (this.isDragging) {
           this.isDragging = false;
           return;
@@ -964,10 +994,6 @@
         this.container.classList.toggle("expanded", this.isExpanded);
         if (this.isExpanded && this.container && this.languageList) {
           this.positionLanguageList();
-        }
-        if (e) {
-          e.preventDefault();
-          e.stopPropagation();
         }
       };
       this.positionLanguageList = () => {
@@ -1041,137 +1067,127 @@
       const baseColors = this.getBaseColors(theme);
       const themeColors = baseColors;
       return `
-            #${SELECTORS.DROPDOWN_CONTAINER} {
-                position: fixed;
-                bottom: 24px;
-                right: 24px;
-                z-index: 2147483647;
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                background: transparent;
-                transition: all 0.3s ease;
-                cursor: move;
-                width: 50px;
-                height: 50px;
-            }
+          #${SELECTORS.DROPDOWN_CONTAINER} {
+              position: fixed;
+              bottom: 24px;
+              right: 24px;
+              z-index: 2147483647;
+              display: flex;
+              flex-direction: column;
+              align-items: center;
+              background: transparent;
+              transition: all 0.3s ease;
+              cursor: move;
+          }
 
-            #${SELECTORS.DROPDOWN_CONTAINER} svg {
-                position: absolute;
-                top: 50%;
-                left: 50%;
-                transform: translate(-50%, -50%);
-                pointer-events: none;
-            }
+          #${SELECTORS.DROPDOWN} {
+              width: 50px;
+              height: 50px;
+              border-radius: 50%;
+              background: var(--tl-bg, ${themeColors.bg});
+              border: var(--tl-border, ${themeColors.border});
+              box-shadow: var(--tl-box-shadow, ${themeColors.shadow});
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              cursor: move;
+              transition: all 0.3s ease;
+              color: var(--tl-color, ${themeColors.color});
+          }
 
-            #${SELECTORS.DROPDOWN} {
-                width: 50px;
-                height: 50px;
-                border-radius: 50%;
-                background: var(--tl-bg, ${themeColors.bg});
-                border: var(--tl-border, ${themeColors.border});
-                box-shadow: var(--tl-box-shadow, ${themeColors.shadow});
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                cursor: move;
-                transition: all 0.3s ease;
-                color: var(--tl-color, ${themeColors.color});
-            }
+          #${SELECTORS.DROPDOWN}:hover {
+              transform: scale(1.05);
+          }
 
-            #${SELECTORS.DROPDOWN}:hover {
-                transform: scale(1.05);
-            }
+          #${SELECTORS.DROPDOWN}:disabled {
+              opacity: 0.5;
+              cursor: not-allowed;
+          }
 
-            #${SELECTORS.DROPDOWN}:disabled {
-                opacity: 0.5;
-                cursor: not-allowed;
-            }
+          #${SELECTORS.DROPDOWN_CONTAINER} .language-list {
+              display: none;
+              width: 200px;
+              min-height: 50px; /* Match button height */
+              max-height: 300px;
+              overflow-y: auto;
+              background: var(--tl-bg, ${themeColors.bg});
+              border-radius: 8px;
+              box-shadow: var(--tl-box-shadow, ${themeColors.shadow});
+              padding: 10px 0;
+              position: fixed;
+              z-index: 2147483648; /* Ensure it's above other elements */
+          }
 
-            #${SELECTORS.DROPDOWN_CONTAINER} .language-list {
-                display: none;
-                width: 200px;
-                min-height: 50px; /* Match button height */
-                max-height: 300px;
-                overflow-y: auto;
-                background: var(--tl-bg, ${themeColors.bg});
-                border-radius: 8px;
-                box-shadow: var(--tl-box-shadow, ${themeColors.shadow});
-                padding: 10px 0;
-                position: fixed;
-                z-index: 2147483648; /* Ensure it's above other elements */
-            }
+          #${SELECTORS.DROPDOWN_CONTAINER}.expanded .language-list {
+              display: block;
+          }
 
-            #${SELECTORS.DROPDOWN_CONTAINER}.expanded .language-list {
-                display: block;
-            }
+          #${SELECTORS.DROPDOWN_CONTAINER} .language-list .language-option {
+              padding: var(--tl-option-padding, 8px 12px);
+              cursor: pointer;
+              transition: background-color 0.2s ease;
+              color: var(--tl-color, ${themeColors.color});
+              font-size: var(--tl-option-font-size, 12px);
+              font-weight: var(--tl-option-font-weight, 400);
+              font-family: var(--tl-option-font-family, inherit);
+              line-height: var(--tl-option-line-height, 1.3);
+              white-space: nowrap;
+              overflow: hidden;
+              text-overflow: ellipsis;
+          }
 
-            #${SELECTORS.DROPDOWN_CONTAINER} .language-list .language-option {
-                padding: var(--tl-option-padding, 8px 12px);
-                cursor: pointer;
-                transition: background-color 0.2s ease;
-                color: var(--tl-color, ${themeColors.color});
-                font-size: var(--tl-option-font-size, 12px);
-                font-weight: var(--tl-option-font-weight, 400);
-                font-family: var(--tl-option-font-family, inherit);
-                line-height: var(--tl-option-line-height, 1.3);
-                white-space: nowrap;
-                overflow: hidden;
-                text-overflow: ellipsis;
-            }
+          #${SELECTORS.DROPDOWN_CONTAINER} .language-list .language-option:hover {
+              background-color: var(--tl-bg-hover, ${themeColors.bgHover});
+          }
 
-            #${SELECTORS.DROPDOWN_CONTAINER} .language-list .language-option:hover {
-                background-color: var(--tl-bg-hover, ${themeColors.bgHover});
-            }
+          #${SELECTORS.DROPDOWN_CONTAINER} .language-list .language-option.selected {
+              background-color: var(--tl-selected-bg, rgba(0,0,0,0.1));
+              font-weight: bold;
+          }
+          
+          #${SELECTORS.POWERED_BY} {
+              display: flex !important;
+              align-items: center !important;
+              justify-content: center !important;
+              gap: 6px !important;
+              
+              background: var(--tl-powered-bg, rgba(0,0,0,0.05)) !important;
+              border-top: 1px solid var(--tl-powered-border, rgba(0,0,0,0.1)) !important;
+              
+              font-size: 10px !important;
+              font-weight: 400 !important;
+              color: var(--tl-powered-color, #666) !important;
+              text-decoration: none !important;
+              line-height: 1 !important;
+              
+              padding: 6px 8px !important;
+              margin: 0 !important;
+              
+              cursor: pointer !important;
+              transition: background-color 0.2s ease !important;
+              
+              pointer-events: auto !important;
+              user-select: none !important;
+              -webkit-user-select: none !important;
+              -moz-user-select: none !important;
+          }
 
-            #${SELECTORS.DROPDOWN_CONTAINER} .language-list .language-option.selected {
-                background-color: var(--tl-selected-bg, rgba(0,0,0,0.1));
-                font-weight: bold;
-            }
-
-            #${SELECTORS.POWERED_BY} {
-                display: flex !important;
-                align-items: center !important;
-                justify-content: center !important;
-                gap: 6px !important;
-                
-                background: var(--tl-powered-bg, rgba(0,0,0,0.05)) !important;
-                border-top: 1px solid var(--tl-powered-border, rgba(0,0,0,0.1)) !important;
-                
-                font-size: 10px !important;
-                font-weight: 400 !important;
-                color: var(--tl-powered-color, #666) !important;
-                text-decoration: none !important;
-                line-height: 1 !important;
-                
-                padding: 6px 8px !important;
-                margin: 0 !important;
-                
-                cursor: pointer !important;
-                transition: background-color 0.2s ease !important;
-                
-                pointer-events: auto !important;
-                user-select: none !important;
-                -webkit-user-select: none !important;
-                -moz-user-select: none !important;
-            }
-
-            #${SELECTORS.DROPDOWN_CONTAINER}.expanded #${SELECTORS.POWERED_BY} {
-                display: flex;
-                padding: var(--tl-mobile-powered-padding, 4px 6px) !important;
-            }
-
-            #${SELECTORS.POWERED_BY}:hover {
-                background: var(--tl-powered-bg-hover, rgba(0,0,0,0.08)) !important;
-            }
-
-            #${SELECTORS.DROPDOWN_CONTAINER} .language-list .language-option.translation-status {
-                text-align: center;
-                font-style: italic;
-                padding: 12px;
-                color: var(--tl-color-muted, #888);
-            }
-        `;
+          #${SELECTORS.DROPDOWN_CONTAINER}.expanded #${SELECTORS.POWERED_BY} {
+              display: flex;
+              padding: var(--tl-mobile-powered-padding, 4px 6px) !important;
+          }
+          
+          #${SELECTORS.POWERED_BY}:hover {
+              background: var(--tl-powered-bg-hover, rgba(0,0,0,0.08)) !important;
+          }
+          
+          #${SELECTORS.DROPDOWN_CONTAINER} .language-list .language-option.translation-status {
+              text-align: center;
+              font-style: italic;
+              padding: 12px;
+              color: var(--tl-color-muted, #888);
+          }
+      `;
     }
     getBaseColors(theme) {
       return theme === "light"
@@ -1223,155 +1239,6 @@
         .join(" ");
       return `${beforeParen} (${insideParen})`;
     }
-    startDragging(clientX, clientY) {
-      if (
-        this.isExpanded ||
-        this.options.isTranslating ||
-        this.options.disabled
-      )
-        return;
-      if (!this.container) return;
-      const rect = this.container.getBoundingClientRect();
-      const offsetX = clientX - rect.left;
-      const offsetY = clientY - rect.top;
-      this.isDragging = true;
-      this.container.style.cursor = "grabbing";
-      this.container.style.transition = "none";
-      const moveHandler = (moveEvent) => {
-        if (!this.isDragging || this.isExpanded || !this.container) return;
-        const currentX =
-          moveEvent instanceof MouseEvent
-            ? moveEvent.clientX
-            : moveEvent.touches[0].clientX;
-        const currentY =
-          moveEvent instanceof MouseEvent
-            ? moveEvent.clientY
-            : moveEvent.touches[0].clientY;
-        const newX = currentX - offsetX;
-        const newY = currentY - offsetY;
-        const clamped = this.constrainToViewport(newX, newY);
-        this.container.style.left = `${clamped.x}px`;
-        this.container.style.top = `${clamped.y}px`;
-        this.container.style.right = "auto";
-        this.container.style.bottom = "auto";
-        moveEvent.preventDefault();
-      };
-      const endHandler = () => {
-        if (!this.isDragging) return;
-        this.isDragging = false;
-        if (this.container) {
-          this.container.style.cursor = "move";
-          this.container.style.transition = "";
-          const finalRect = this.container.getBoundingClientRect();
-          localStorage.setItem(
-            "camb_dropdown_position",
-            JSON.stringify({
-              x: finalRect.left,
-              y: finalRect.top,
-            })
-          );
-        }
-        document.removeEventListener("mousemove", moveHandler);
-        document.removeEventListener("mouseup", endHandler);
-        document.removeEventListener("touchmove", moveHandler);
-        document.removeEventListener("touchend", endHandler);
-      };
-      document.addEventListener("mousemove", moveHandler);
-      document.addEventListener("mouseup", endHandler);
-      document.addEventListener("touchmove", moveHandler, { passive: false });
-      document.addEventListener("touchend", endHandler);
-    }
-    createContainer() {
-      this.container = document.createElement("div");
-      this.container.id = SELECTORS.DROPDOWN_CONTAINER;
-      this.container.setAttribute("data-no-translate", "true");
-      this.container.style.position = "fixed";
-      this.container.style.cursor = "move";
-      this.container.style.transition = "none";
-      this.iconButton = document.createElement("button");
-      this.iconButton.id = SELECTORS.DROPDOWN;
-      this.iconButton.setAttribute("data-no-translate", "true");
-      this.iconButton.style.width = "100%";
-      this.iconButton.style.height = "100%";
-      this.iconButton.style.position = "absolute";
-      this.iconButton.style.top = "0";
-      this.iconButton.style.left = "0";
-      this.iconButton.style.background = "transparent";
-      this.iconButton.style.border = "none";
-      this.iconButton.style.cursor = "pointer";
-      const iconWrapper = document.createElement("div");
-      iconWrapper.style.width = "50px";
-      iconWrapper.style.height = "50px";
-      iconWrapper.style.position = "relative";
-      iconWrapper.style.display = "flex";
-      iconWrapper.style.alignItems = "center";
-      iconWrapper.style.justifyContent = "center";
-      const svgElement = document.createElementNS(
-        "http://www.w3.org/2000/svg",
-        "svg"
-      );
-      svgElement.setAttribute("width", "20px");
-      svgElement.setAttribute("height", "20px");
-      svgElement.setAttribute("viewBox", "0 0 24 24");
-      svgElement.setAttribute("fill", "#ffffff");
-      svgElement.setAttribute("stroke", "#ffffff");
-      svgElement.innerHTML = `
-            <g id="SVGRepo_bgCarrier" stroke-width="0"></g>
-            <g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g>
-            <g id="SVGRepo_iconCarrier">
-                <defs>
-                    <style>.cls-1{fill:none;stroke:#ffffff;stroke-miterlimit:10;stroke-width:1.92px;}</style>
-                </defs>
-                <line class="cls-1" x1="0.5" y1="3.35" x2="12" y2="3.35"></line>
-                <line class="cls-1" x1="6.25" y1="0.48" x2="6.25" y2="3.35"></line>
-                <path class="cls-1" d="M9.12,3.35c0,3.52-3.28,8.2-7.66,10.55"></path>
-                <path class="cls-1" d="M4.51,7.37A16.4,16.4,0,0,0,11,13.9"></path>
-                <polyline class="cls-1" points="12.96 22.52 16.79 11.98 17.75 11.98 21.58 22.52"></polyline>
-                <line class="cls-1" x1="20.43" y1="18.69" x2="15.07" y2="18.69"></line>
-                <line class="cls-1" x1="11.04" y1="22.52" x2="14.88" y2="22.52"></line>
-                <line class="cls-1" x1="19.67" y1="22.52" x2="23.5" y2="22.52"></line>
-            </g>
-        `;
-      iconWrapper.appendChild(this.iconButton);
-      iconWrapper.appendChild(svgElement);
-      this.container.addEventListener("mousedown", this.handleMouseDown);
-      this.container.addEventListener("touchstart", this.handleTouchStart, {
-        passive: false,
-      });
-      this.iconButton.addEventListener("click", this.handleContainerClick);
-      this.languageList = document.createElement("div");
-      this.languageList.classList.add("language-list");
-      this.populateLanguageList();
-      this.createPoweredByLink();
-      this.container.appendChild(iconWrapper);
-      this.container.appendChild(this.languageList);
-      this.restorePosition();
-      if (this.options.isTranslating || this.options.disabled) {
-        this.iconButton.disabled = true;
-        this.iconButton.setAttribute(
-          "title",
-          this.options.isTranslating
-            ? "Translation is in progress"
-            : "Translation service unavailable"
-        );
-      }
-      document.body.appendChild(this.container);
-    }
-    restorePosition() {
-      if (!this.container) return;
-      try {
-        const positionStr = localStorage.getItem("camb_dropdown_position");
-        const position = positionStr ? JSON.parse(positionStr) : null;
-        if (position) {
-          this.container.style.left = `${position.x}px`;
-          this.container.style.top = `${position.y}px`;
-          this.container.style.right = "auto";
-          this.container.style.bottom = "auto";
-        }
-      } catch (error) {
-        console.error("Failed to load dropdown position", error);
-      }
-    }
     constrainToViewport(x, y) {
       if (!this.container) return { x, y };
       const dropdownWidth = this.container.offsetWidth;
@@ -1385,6 +1252,36 @@
         x: Math.max(minMargin, Math.min(x, maxX)),
         y: Math.max(minMargin, Math.min(y, maxY)),
       };
+    }
+    restorePosition() {
+      if (!this.container) return;
+      const position = this.loadPosition();
+      if (position) {
+        this.container.style.left = `${position.x}px`;
+        this.container.style.top = `${position.y}px`;
+        this.container.style.right = "auto";
+        this.container.style.bottom = "auto";
+      }
+    }
+    // Local storage methods
+    savePosition(position) {
+      try {
+        localStorage.setItem(
+          "camb_dropdown_position",
+          JSON.stringify(position)
+        );
+      } catch (error) {
+        console.error("Failed to save dropdown position", error);
+      }
+    }
+    loadPosition() {
+      try {
+        const positionStr = localStorage.getItem("camb_dropdown_position");
+        return positionStr ? JSON.parse(positionStr) : null;
+      } catch (error) {
+        console.error("Failed to load dropdown position", error);
+        return null;
+      }
     }
     populateLanguageList() {
       if (!this.languageList) return;
@@ -1469,6 +1366,58 @@
       text.textContent = "Powered by CAMB.AI";
       text.setAttribute("data-no-translate", "true");
       this.poweredByLink.appendChild(text);
+    }
+    createContainer() {
+      this.container = document.createElement("div");
+      this.container.id = SELECTORS.DROPDOWN_CONTAINER;
+      this.container.setAttribute("data-no-translate", "true");
+      this.container.style.position = "fixed";
+      this.container.style.cursor = "move";
+      this.container.style.transition = "none";
+      this.iconButton = document.createElement("button");
+      this.iconButton.id = SELECTORS.DROPDOWN;
+      this.iconButton.setAttribute("data-no-translate", "true");
+      this.iconButton.innerHTML = `
+          <svg width="20px" height="20px" viewBox="0 0 24 24" id="Layer_1" data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" fill="#ffffff" stroke="#ffffff">
+              <g id="SVGRepo_bgCarrier" stroke-width="0"></g>
+              <g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g>
+              <g id="SVGRepo_iconCarrier">
+                  <defs>
+                      <style>.cls-1{fill:none;stroke:#ffffff;stroke-miterlimit:10;stroke-width:1.92px;}</style>
+                  </defs>
+                  <line class="cls-1" x1="0.5" y1="3.35" x2="12" y2="3.35"></line>
+                  <line class="cls-1" x1="6.25" y1="0.48" x2="6.25" y2="3.35"></line>
+                  <path class="cls-1" d="M9.12,3.35c0,3.52-3.28,8.2-7.66,10.55"></path>
+                  <path class="cls-1" d="M4.51,7.37A16.4,16.4,0,0,0,11,13.9"></path>
+                  <polyline class="cls-1" points="12.96 22.52 16.79 11.98 17.75 11.98 21.58 22.52"></polyline>
+                  <line class="cls-1" x1="20.43" y1="18.69" x2="15.07" y2="18.69"></line>
+                  <line class="cls-1" x1="11.04" y1="22.52" x2="14.88" y2="22.52"></line>
+                  <line class="cls-1" x1="19.67" y1="22.52" x2="23.5" y2="22.52"></line>
+              </g>
+          </svg>
+      `;
+      this.iconButton.addEventListener("mousedown", this.handleMouseDown);
+      this.iconButton.addEventListener("click", this.toggleLanguageList);
+      this.languageList = document.createElement("div");
+      this.languageList.classList.add("language-list");
+      this.populateLanguageList();
+      this.createPoweredByLink();
+      this.container.appendChild(this.iconButton);
+      this.container.appendChild(this.languageList);
+      if (this.poweredByLink) {
+        this.container.appendChild(this.poweredByLink);
+      }
+      this.restorePosition();
+      if (this.options.isTranslating || this.options.disabled) {
+        this.iconButton.disabled = true;
+        this.iconButton.setAttribute(
+          "title",
+          this.options.isTranslating
+            ? "Translation is in progress"
+            : "Translation service unavailable"
+        );
+      }
+      document.body.appendChild(this.container);
     }
   }
   const queued = /* @__PURE__ */ new WeakSet();
@@ -2714,33 +2663,33 @@
       }
       const style = document.createElement("style");
       style.textContent = `
-            .tl-skeleton {
-                color: transparent !important;
-                background-color: var(--skeleton-bg-color, #e0e0e0) !important;
-                background-image: linear-gradient(
-                    90deg,
-                    var(--skeleton-bg-color, #e0e0e0),
-                    var(--skeleton-highlight-color, #f0f0f0),
-                    var(--skeleton-bg-color, #e0e0e0)
-                ) !important;
-                background-size: 200% 100% !important;
-                animation: skeleton-pulse 1.5s linear infinite !important;
-                border-radius: 4px !important;
-                user-select: none !important;
-                margin-left: 1px !important;
-                margin-right: 1px !important;
-                -webkit-user-select: none !important;
-            }
+          .tl-skeleton {
+              color: transparent !important;
+              background-color: var(--skeleton-bg-color, #e0e0e0) !important;
+              background-image: linear-gradient(
+                  90deg,
+                  var(--skeleton-bg-color, #e0e0e0),
+                  var(--skeleton-highlight-color, #f0f0f0),
+                  var(--skeleton-bg-color, #e0e0e0)
+              ) !important;
+              background-size: 200% 100% !important;
+              animation: skeleton-pulse 1.5s linear infinite !important;
+              border-radius: 4px !important;
+              user-select: none !important;
+              margin-left: 1px !important;
+              margin-right: 1px !important;
+              -webkit-user-select: none !important;
+          }
 
-            @keyframes skeleton-pulse {
-                0% {
-                    background-position: 100% 0;
-                }
-                100% {
-                    background-position: -100% 0;
-                }
-            }
-        `;
+          @keyframes skeleton-pulse {
+              0% {
+                  background-position: 100% 0;
+              }
+              100% {
+                  background-position: -100% 0;
+              }
+          }
+      `;
       document.head.appendChild(style);
       this.updateLanguageDropdown();
       this.startObserver();
