@@ -1219,7 +1219,7 @@
             #${SELECTORS.DROPDOWN_CONTAINER} {
                 position: fixed;
                 bottom: 24px;
-                right: 24px;
+                left: 24px;
                 z-index: 2147483647;
                 width: 50px;
                 height: 50px;
@@ -1293,11 +1293,11 @@
                 overflow: hidden;
                 text-overflow: ellipsis;
             }
-
+            
             #${SELECTORS.DROPDOWN_CONTAINER} .language-list .language-option:hover {
                 background-color: var(--tl-bg-hover, ${themeColors.bgHover});
             }
-
+            
             #${SELECTORS.DROPDOWN_CONTAINER} .language-list .language-option.selected {
                 background-color: var(--tl-selected-bg, rgba(0,0,0,0.1));
                 font-weight: bold;
@@ -1419,6 +1419,11 @@
         this.container.style.top = `${position.y}px`;
         this.container.style.right = "auto";
         this.container.style.bottom = "auto";
+      } else {
+        this.container.style.left = "24px";
+        this.container.style.bottom = "24px";
+        this.container.style.right = "auto";
+        this.container.style.top = "auto";
       }
     }
     // Local storage methods
