@@ -87,13 +87,13 @@ export default function GermanHeroFood() {
 
   return (
     <div className="w-full">
-      {/* <Navbar /> */}
+      <Navbar />
 
       {/* Hero Section */}
       <div
         id="home"
         ref={heroRef}
-        className="min-h-screen w-full dark:bg-black bg-white dark:bg-grid-white/[0.2] bg-grid-black/[0.2] relative flex items-center justify-center pt-16"
+        className="min-h-screen w-full dark:bg-black bg-white dark:bg-grid-white/[0.2] bg-grid-black/[0.2] relative flex items-center justify-center pt-16 overflow-hidden"
       >
         <div className="absolute pointer-events-none inset-0 flex items-center justify-center dark:bg-black bg-white [mask-image:radial-gradient(ellipse_at_center,transparent_20%,black)]"></div>
         <Spotlight
@@ -121,7 +121,7 @@ export default function GermanHeroFood() {
                 </motion.div>
 
                 <motion.h1
-                  className="text-4xl font-bold tracking-tighter sm:text-5xl xl:text-6xl/none bg-clip-text text-transparent bg-gradient-to-b from-neutral-800 via-neutral-700 to-neutral-700 dark:from-neutral-50 dark:to-neutral-400"
+                  className="text-3xl font-bold tracking-tighter sm:text-5xl xl:text-6xl/none bg-clip-text text-transparent bg-gradient-to-b from-neutral-800 via-neutral-700 to-neutral-700 dark:from-neutral-50 dark:to-neutral-400"
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.4 }}
@@ -180,7 +180,7 @@ export default function GermanHeroFood() {
               </motion.div>
 
               <motion.div
-                className="grid grid-cols-3 gap-8 pt-6"
+                className="grid grid-cols-1 sm:grid-cols-3 gap-8 pt-6"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 1.2 }}
@@ -270,7 +270,7 @@ export default function GermanHeroFood() {
       <section
         id="about"
         ref={aboutRef}
-        className="py-24 bg-gradient-to-br from-amber-50 to-orange-50 dark:from-neutral-950 dark:to-neutral-900"
+        className="py-16 md:py-24 bg-gradient-to-br from-amber-50 to-orange-50 dark:from-neutral-950 dark:to-neutral-900"
       >
         <div className="container px-4 md:px-6 mx-auto">
           <motion.div
@@ -371,7 +371,7 @@ export default function GermanHeroFood() {
       <section
         id="menu"
         ref={menuRef}
-        className="py-24 bg-white dark:bg-neutral-950"
+        className="py-16 md:py-24 bg-white dark:bg-neutral-950"
       >
         <div className="container px-4 md:px-6 mx-auto">
           <motion.div
@@ -432,7 +432,7 @@ export default function GermanHeroFood() {
       <section
         id="testimonials"
         ref={testimonialsRef}
-        className="py-24 bg-gradient-to-br from-neutral-900 to-black dark:from-neutral-950 dark:to-black"
+        className="py-16 md:py-24 bg-gradient-to-br from-neutral-900 to-black dark:from-neutral-950 dark:to-black"
       >
         <div className="container px-4 md:px-6 mx-auto">
           <motion.div

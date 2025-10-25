@@ -151,7 +151,7 @@ export default function Navbar() {
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: "auto" }}
               exit={{ opacity: 0, height: 0 }}
-              className="md:hidden border-t border-neutral-200 dark:border-neutral-800"
+              className="md:hidden border-t border-neutral-200 dark:border-neutral-800 max-h-[calc(100vh-4rem)] overflow-y-auto"
             >
               <div className="py-4 space-y-4">
                 {navItems.map((item) => (

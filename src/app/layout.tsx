@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import type { Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
@@ -22,6 +23,11 @@ export const metadata: Metadata = {
     "Erleben Sie authentische deutsche Aromen mit traditionellen Rezepten seit 1952",
 };
 
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+};
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -43,10 +49,10 @@ export default function RootLayout({
             <Toaster />
           </ThemeProvider>
         </LanguageProvider>
-        {/* <Script
+        <Script
           src="/website-translation/websiteTranslate.js"
           data-api-key="wt_b9ed8167461c4295_zPUY-o__Npqvgakacn13sA"
-        /> */}
+        />
       </body>
     </html>
   );
