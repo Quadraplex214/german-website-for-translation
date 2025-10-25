@@ -949,8 +949,6 @@
         this.isDragging = false;
         document.addEventListener("mousemove", this.handleMouseMove);
         document.addEventListener("mouseup", this.handleMouseUp);
-        e.preventDefault();
-        e.stopPropagation();
       };
       this.handleMouseMove = (e) => {
         if (this.dragTimer) {
@@ -992,14 +990,10 @@
         document.removeEventListener("mousemove", this.handleMouseMove);
         document.removeEventListener("mouseup", this.handleMouseUp);
         if (!this.container) return;
-        if (!this.isDragging) {
-          this.toggleLanguageList(new MouseEvent("click"));
-          return;
-        }
-        this.isDragging = false;
-        this.container.style.cursor = "move";
-        this.container.style.transition = "";
-        if (this.container) {
+        if (this.isDragging) {
+          this.isDragging = false;
+          this.container.style.cursor = "move";
+          this.container.style.transition = "";
           const rect = this.container.getBoundingClientRect();
           this.savePosition({
             x: rect.left,
