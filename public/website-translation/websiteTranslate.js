@@ -1085,28 +1085,69 @@
       this.iconButton = null;
       this.languageList = null;
     }
+    updateButtonLanguage() {
+      if (!this.iconButton || !this.options.config) return;
+      const {
+        currentLang,
+        config,
+        translatedDropdownLabels = {},
+      } = this.options;
+      const rawLabel =
+        translatedDropdownLabels[currentLang] ||
+        config.languageLabels[currentLang];
+      const displayName = this.capitalizeLabel(rawLabel);
+      const languageSpan = document.createElement("span");
+      languageSpan.textContent = displayName;
+      languageSpan.style.marginRight = "8px";
+      languageSpan.style.fontSize = "12px";
+      this.iconButton.innerHTML = "";
+      this.iconButton.appendChild(languageSpan);
+      const svgElement = document.createElementNS(
+        "http://www.w3.org/2000/svg",
+        "svg"
+      );
+      svgElement.setAttribute("width", "20px");
+      svgElement.setAttribute("height", "20px");
+      svgElement.setAttribute("viewBox", "0 0 24 24");
+      svgElement.setAttribute("fill", "#ffffff");
+      svgElement.setAttribute("stroke", "#ffffff");
+      svgElement.innerHTML = `
+            <g id="SVGRepo_bgCarrier" stroke-width="0"></g>
+            <g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g>
+            <g id="SVGRepo_iconCarrier">
+                <defs>
+                    <style>.cls-1{fill:none;stroke:#ffffff;stroke-miterlimit:10;stroke-width:1.92px;}</style>
+                </defs>
+                <line class="cls-1" x1="0.5" y1="3.35" x2="12" y2="3.35"></line>
+                <line class="cls-1" x1="6.25" y1="0.48" x2="6.25" y2="3.35"></line>
+                <path class="cls-1" d="M9.12,3.35c0,3.52-3.28,8.2-7.66,10.55"></path>
+                <path class="cls-1" d="M4.51,7.37A16.4,16.4,0,0,0,11,13.9"></path>
+                <polyline class="cls-1" points="12.96 22.52 16.79 11.98 17.75 11.98 21.58 22.52"></polyline>
+                <line class="cls-1" x1="20.43" y1="18.69" x2="15.07" y2="18.69"></line>
+                <line class="cls-1" x1="11.04" y1="22.52" x2="14.88" y2="22.52"></line>
+                <line class="cls-1" x1="19.67" y1="22.52" x2="23.5" y2="22.52"></line>
+            </g>
+        `;
+      this.iconButton.appendChild(svgElement);
+    }
     update(newOptions) {
-      const oldCurrentLang = this.options.currentLang;
       this.options = { ...this.options, ...newOptions };
-      if (oldCurrentLang !== this.options.currentLang) {
+      this.updateButtonLanguage();
+      if (this.languageList) {
         this.populateLanguageList();
       }
       if (this.iconButton) {
-        this.iconButton.disabled =
-          !!this.options.isTranslating || !!this.options.disabled;
         if (this.options.isTranslating || this.options.disabled) {
+          this.iconButton.disabled = true;
           this.iconButton.setAttribute(
             "title",
             this.options.isTranslating
               ? "Translation is in progress"
               : "Translation service unavailable"
           );
-          this.populateLanguageList();
-          this.positionLanguageList();
         } else {
+          this.iconButton.disabled = false;
           this.iconButton.removeAttribute("title");
-          this.populateLanguageList();
-          this.positionLanguageList();
         }
       }
     }
@@ -1441,6 +1482,10 @@
       this.iconButton.style.background = "transparent";
       this.iconButton.style.border = "none";
       this.iconButton.style.cursor = "move";
+      this.iconButton.style.display = "flex";
+      this.iconButton.style.alignItems = "center";
+      this.iconButton.style.justifyContent = "center";
+      this.updateButtonLanguage();
       const iconWrapper = document.createElement("div");
       iconWrapper.style.width = "50px";
       iconWrapper.style.height = "50px";
@@ -1448,34 +1493,7 @@
       iconWrapper.style.display = "flex";
       iconWrapper.style.alignItems = "center";
       iconWrapper.style.justifyContent = "center";
-      const svgElement = document.createElementNS(
-        "http://www.w3.org/2000/svg",
-        "svg"
-      );
-      svgElement.setAttribute("width", "20px");
-      svgElement.setAttribute("height", "20px");
-      svgElement.setAttribute("viewBox", "0 0 24 24");
-      svgElement.setAttribute("fill", "#ffffff");
-      svgElement.setAttribute("stroke", "#ffffff");
-      svgElement.innerHTML = `
-            <g id="SVGRepo_bgCarrier" stroke-width="0"></g>
-            <g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g>
-            <g id="SVGRepo_iconCarrier">
-                <defs>
-                    <style>.cls-1{fill:none;stroke:#ffffff;stroke-miterlimit:10;stroke-width:1.92px;}</style>
-                </defs>
-                <line class="cls-1" x1="0.5" y1="3.35" x2="12" y2="3.35"></line>
-                <line class="cls-1" x1="6.25" y1="0.48" x2="6.25" y2="3.35"></line>
-                <path class="cls-1" d="M9.12,3.35c0,3.52-3.28,8.2-7.66,10.55"></path>
-                <path class="cls-1" d="M4.51,7.37A16.4,16.4,0,0,0,11,13.9"></path>
-                <polyline class="cls-1" points="12.96 22.52 16.79 11.98 17.75 11.98 21.58 22.52"></polyline>
-                <line class="cls-1" x1="20.43" y1="18.69" x2="15.07" y2="18.69"></line>
-                <line class="cls-1" x1="11.04" y1="22.52" x2="14.88" y2="22.52"></line>
-                <line class="cls-1" x1="19.67" y1="22.52" x2="23.5" y2="22.52"></line>
-            </g>
-        `;
       iconWrapper.appendChild(this.iconButton);
-      iconWrapper.appendChild(svgElement);
       this.container.addEventListener("mousedown", this.handleMouseDown);
       this.container.addEventListener("touchstart", this.handleTouchStart, {
         passive: false,
