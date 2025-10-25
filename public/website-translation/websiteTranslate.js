@@ -941,16 +941,60 @@
         const target = e.target;
         const isInteractiveElement = target.closest("a, svg") !== null;
         if (isInteractiveElement) return;
-        const rect = this.container.getBoundingClientRect();
-        this.dragStartX = e.clientX - rect.left;
-        this.dragStartY = e.clientY - rect.top;
-        this.isDragging = true;
-        this.container.style.cursor = "grabbing";
-        this.container.style.transition = "none";
+        this.dragStartX = e.clientX;
+        this.dragStartY = e.clientY;
+        this.isDragging = false;
         document.addEventListener("mousemove", this.handleMouseMove);
         document.addEventListener("mouseup", this.handleMouseUp);
         e.preventDefault();
         e.stopPropagation();
+      };
+      this.handleMouseMove = (e) => {
+        if (!this.container) return;
+        const dragThreshold = 5;
+        const deltaX = Math.abs(e.clientX - this.dragStartX);
+        const deltaY = Math.abs(e.clientY - this.dragStartY);
+        if (
+          !this.isDragging &&
+          (deltaX > dragThreshold || deltaY > dragThreshold)
+        ) {
+          this.isDragging = true;
+          this.container.style.cursor = "grabbing";
+          this.container.style.transition = "none";
+        }
+        if (!this.isDragging || this.isExpanded) return;
+        const rect = this.container.getBoundingClientRect();
+        const newX = e.clientX - this.dragStartX + rect.left;
+        const newY = e.clientY - this.dragStartY + rect.top;
+        const clamped = this.constrainToViewport(newX, newY);
+        this.container.style.left = `${clamped.x}px`;
+        this.container.style.top = `${clamped.y}px`;
+        this.container.style.right = "auto";
+        this.container.style.bottom = "auto";
+        this.dragStartX = e.clientX;
+        this.dragStartY = e.clientY;
+        e.preventDefault();
+        e.stopPropagation();
+      };
+      this.handleMouseUp = () => {
+        var _a;
+        document.removeEventListener("mousemove", this.handleMouseMove);
+        document.removeEventListener("mouseup", this.handleMouseUp);
+        if (!this.container) return;
+        if (!this.isDragging) {
+          (_a = this.iconButton) == null ? void 0 : _a.click();
+          return;
+        }
+        this.isDragging = false;
+        this.container.style.cursor = "move";
+        this.container.style.transition = "";
+        if (this.container) {
+          const rect = this.container.getBoundingClientRect();
+          this.savePosition({
+            x: rect.left,
+            y: rect.top,
+          });
+        }
       };
       this.handleTouchStart = (e) => {
         if (
@@ -964,69 +1008,61 @@
         const isInteractiveElement = target.closest("a, svg") !== null;
         if (isInteractiveElement) return;
         const touch = e.touches[0];
-        const rect = this.container.getBoundingClientRect();
-        this.dragStartX = touch.clientX - rect.left;
-        this.dragStartY = touch.clientY - rect.top;
-        this.isDragging = true;
-        this.container.style.cursor = "grabbing";
-        this.container.style.transition = "none";
+        this.dragStartX = touch.clientX;
+        this.dragStartY = touch.clientY;
+        this.isDragging = false;
         document.addEventListener("touchmove", this.handleTouchMove, {
           passive: false,
         });
         document.addEventListener("touchend", this.handleTouchEnd);
         e.preventDefault();
       };
-      this.handleMouseMove = (e) => {
-        if (!this.isDragging || this.isExpanded || !this.container) return;
-        const newX = e.clientX - this.dragStartX;
-        const newY = e.clientY - this.dragStartY;
-        const clamped = this.constrainToViewport(newX, newY);
-        this.container.style.left = `${clamped.x}px`;
-        this.container.style.top = `${clamped.y}px`;
-        this.container.style.right = "auto";
-        this.container.style.bottom = "auto";
-        e.preventDefault();
-        e.stopPropagation();
-      };
       this.handleTouchMove = (e) => {
-        if (!this.isDragging || this.isExpanded || !this.container) return;
+        if (!this.container) return;
         const touch = e.touches[0];
-        const newX = touch.clientX - this.dragStartX;
-        const newY = touch.clientY - this.dragStartY;
+        const dragThreshold = 5;
+        const deltaX = Math.abs(touch.clientX - this.dragStartX);
+        const deltaY = Math.abs(touch.clientY - this.dragStartY);
+        if (
+          !this.isDragging &&
+          (deltaX > dragThreshold || deltaY > dragThreshold)
+        ) {
+          this.isDragging = true;
+          this.container.style.cursor = "grabbing";
+          this.container.style.transition = "none";
+        }
+        if (!this.isDragging || this.isExpanded) return;
+        const rect = this.container.getBoundingClientRect();
+        const newX = touch.clientX - this.dragStartX + rect.left;
+        const newY = touch.clientY - this.dragStartY + rect.top;
         const clamped = this.constrainToViewport(newX, newY);
         this.container.style.left = `${clamped.x}px`;
         this.container.style.top = `${clamped.y}px`;
         this.container.style.right = "auto";
         this.container.style.bottom = "auto";
+        this.dragStartX = touch.clientX;
+        this.dragStartY = touch.clientY;
         e.preventDefault();
       };
       this.handleTouchEnd = () => {
-        if (!this.isDragging) return;
-        this.isDragging = false;
-        if (this.container) {
-          this.container.style.cursor = "move";
-          this.container.style.transition = "";
-          this.savePosition({
-            x: parseInt(this.container.style.left, 10),
-            y: parseInt(this.container.style.top, 10),
-          });
-        }
+        var _a;
         document.removeEventListener("touchmove", this.handleTouchMove);
         document.removeEventListener("touchend", this.handleTouchEnd);
-      };
-      this.handleMouseUp = () => {
-        if (!this.isDragging) return;
+        if (!this.container) return;
+        if (!this.isDragging) {
+          (_a = this.iconButton) == null ? void 0 : _a.click();
+          return;
+        }
         this.isDragging = false;
+        this.container.style.cursor = "move";
+        this.container.style.transition = "";
         if (this.container) {
-          this.container.style.cursor = "move";
-          this.container.style.transition = "";
+          const rect = this.container.getBoundingClientRect();
           this.savePosition({
-            x: parseInt(this.container.style.left, 10),
-            y: parseInt(this.container.style.top, 10),
+            x: rect.left,
+            y: rect.top,
           });
         }
-        document.removeEventListener("mousemove", this.handleMouseMove);
-        document.removeEventListener("mouseup", this.handleMouseUp);
       };
       this.toggleLanguageList = (_e) => {
         if (
@@ -1480,7 +1516,6 @@
       this.iconButton.style.boxShadow =
         "var(--tl-box-shadow, 0 2px 8px rgba(0,0,0,0.3))";
       this.iconButton.style.transition = "transform 0.3s ease";
-      this.iconButton.style.pointerEvents = "none";
       const svgElement = document.createElementNS(
         "http://www.w3.org/2000/svg",
         "svg"
@@ -1490,7 +1525,6 @@
       svgElement.setAttribute("viewBox", "0 0 24 24");
       svgElement.setAttribute("fill", "currentColor");
       svgElement.setAttribute("stroke", "currentColor");
-      svgElement.style.pointerEvents = "none";
       svgElement.innerHTML = `
             <g id="SVGRepo_bgCarrier" stroke-width="0"></g>
             <g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g>
@@ -1515,8 +1549,8 @@
       iconWrapper.style.display = "flex";
       iconWrapper.style.alignItems = "center";
       iconWrapper.style.justifyContent = "center";
-      iconWrapper.appendChild(this.iconButton);
       this.iconButton.appendChild(svgElement);
+      iconWrapper.appendChild(this.iconButton);
       this.container.addEventListener("mousedown", this.handleMouseDown);
       this.container.addEventListener("touchstart", this.handleTouchStart, {
         passive: false,
