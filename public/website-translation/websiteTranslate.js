@@ -1100,8 +1100,7 @@
       languageSpan.textContent = displayName;
       languageSpan.style.marginRight = "8px";
       languageSpan.style.fontSize = "12px";
-      this.iconButton.innerHTML = "";
-      this.iconButton.appendChild(languageSpan);
+      languageSpan.style.color = "inherit";
       const svgElement = document.createElementNS(
         "http://www.w3.org/2000/svg",
         "svg"
@@ -1109,14 +1108,15 @@
       svgElement.setAttribute("width", "20px");
       svgElement.setAttribute("height", "20px");
       svgElement.setAttribute("viewBox", "0 0 24 24");
-      svgElement.setAttribute("fill", "#ffffff");
-      svgElement.setAttribute("stroke", "#ffffff");
+      svgElement.setAttribute("fill", "currentColor");
+      svgElement.setAttribute("stroke", "currentColor");
+      svgElement.style.marginLeft = "8px";
       svgElement.innerHTML = `
             <g id="SVGRepo_bgCarrier" stroke-width="0"></g>
             <g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g>
             <g id="SVGRepo_iconCarrier">
                 <defs>
-                    <style>.cls-1{fill:none;stroke:#ffffff;stroke-miterlimit:10;stroke-width:1.92px;}</style>
+                    <style>.cls-1{fill:none;stroke:currentColor;stroke-miterlimit:10;stroke-width:1.92px;}</style>
                 </defs>
                 <line class="cls-1" x1="0.5" y1="3.35" x2="12" y2="3.35"></line>
                 <line class="cls-1" x1="6.25" y1="0.48" x2="6.25" y2="3.35"></line>
@@ -1128,6 +1128,8 @@
                 <line class="cls-1" x1="19.67" y1="22.52" x2="23.5" y2="22.52"></line>
             </g>
         `;
+      this.iconButton.innerHTML = "";
+      this.iconButton.appendChild(languageSpan);
       this.iconButton.appendChild(svgElement);
     }
     update(newOptions) {
@@ -1187,6 +1189,9 @@
                 top: 0;
                 left: 0;
                 z-index: 1;
+                font-family: inherit;
+                font-size: 12px;
+                font-weight: 500;
             }
 
             #${SELECTORS.DROPDOWN}:hover {
@@ -1479,13 +1484,17 @@
       this.iconButton.style.left = "0";
       this.iconButton.style.width = "100%";
       this.iconButton.style.height = "100%";
-      this.iconButton.style.background = "transparent";
-      this.iconButton.style.border = "none";
+      this.iconButton.style.background = "var(--tl-bg, #333333)";
+      this.iconButton.style.border = "var(--tl-border, none)";
+      this.iconButton.style.borderRadius = "50%";
+      this.iconButton.style.color = "var(--tl-color, #ffffff)";
       this.iconButton.style.cursor = "move";
       this.iconButton.style.display = "flex";
       this.iconButton.style.alignItems = "center";
       this.iconButton.style.justifyContent = "center";
-      this.updateButtonLanguage();
+      this.iconButton.style.boxShadow =
+        "var(--tl-box-shadow, 0 2px 8px rgba(0,0,0,0.3))";
+      this.iconButton.style.transition = "transform 0.3s ease";
       const iconWrapper = document.createElement("div");
       iconWrapper.style.width = "50px";
       iconWrapper.style.height = "50px";
@@ -1493,6 +1502,7 @@
       iconWrapper.style.display = "flex";
       iconWrapper.style.alignItems = "center";
       iconWrapper.style.justifyContent = "center";
+      this.updateButtonLanguage();
       iconWrapper.appendChild(this.iconButton);
       this.container.addEventListener("mousedown", this.handleMouseDown);
       this.container.addEventListener("touchstart", this.handleTouchStart, {
