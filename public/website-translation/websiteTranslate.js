@@ -1087,20 +1087,7 @@
     }
     updateButtonLanguage() {
       if (!this.iconButton || !this.options.config) return;
-      const {
-        currentLang,
-        config,
-        translatedDropdownLabels = {},
-      } = this.options;
-      const rawLabel =
-        translatedDropdownLabels[currentLang] ||
-        config.languageLabels[currentLang];
-      const displayName = this.capitalizeLabel(rawLabel);
-      const languageSpan = document.createElement("span");
-      languageSpan.textContent = displayName;
-      languageSpan.style.marginRight = "8px";
-      languageSpan.style.fontSize = "12px";
-      languageSpan.style.color = "inherit";
+      this.iconButton.innerHTML = "";
       const svgElement = document.createElementNS(
         "http://www.w3.org/2000/svg",
         "svg"
@@ -1108,9 +1095,8 @@
       svgElement.setAttribute("width", "20px");
       svgElement.setAttribute("height", "20px");
       svgElement.setAttribute("viewBox", "0 0 24 24");
-      svgElement.setAttribute("fill", "white");
-      svgElement.setAttribute("stroke", "white");
-      svgElement.style.marginLeft = "8px";
+      svgElement.setAttribute("fill", "currentColor");
+      svgElement.setAttribute("stroke", "currentColor");
       svgElement.innerHTML = `
             <g id="SVGRepo_bgCarrier" stroke-width="0"></g>
             <g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g>
@@ -1128,7 +1114,6 @@
                 <line class="cls-1" x1="19.67" y1="22.52" x2="23.5" y2="22.52"></line>
             </g>
         `;
-      this.iconButton.innerHTML = "";
       this.iconButton.appendChild(svgElement);
     }
     update(newOptions) {
