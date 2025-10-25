@@ -939,7 +939,7 @@
           return;
         if (!this.container) return;
         const target = e.target;
-        const isInteractiveElement = target.closest("svg, path, a") !== null;
+        const isInteractiveElement = target.closest("a, svg") !== null;
         if (isInteractiveElement) return;
         const rect = this.container.getBoundingClientRect();
         this.dragStartX = e.clientX - rect.left;
@@ -961,7 +961,8 @@
           return;
         if (!this.container) return;
         const target = e.target;
-        if (target.closest("a") !== null) return;
+        const isInteractiveElement = target.closest("a, svg") !== null;
+        if (isInteractiveElement) return;
         const touch = e.touches[0];
         const rect = this.container.getBoundingClientRect();
         this.dragStartX = touch.clientX - rect.left;
@@ -1479,6 +1480,34 @@
       this.iconButton.style.boxShadow =
         "var(--tl-box-shadow, 0 2px 8px rgba(0,0,0,0.3))";
       this.iconButton.style.transition = "transform 0.3s ease";
+      this.iconButton.style.pointerEvents = "none";
+      const svgElement = document.createElementNS(
+        "http://www.w3.org/2000/svg",
+        "svg"
+      );
+      svgElement.setAttribute("width", "20px");
+      svgElement.setAttribute("height", "20px");
+      svgElement.setAttribute("viewBox", "0 0 24 24");
+      svgElement.setAttribute("fill", "currentColor");
+      svgElement.setAttribute("stroke", "currentColor");
+      svgElement.style.pointerEvents = "none";
+      svgElement.innerHTML = `
+            <g id="SVGRepo_bgCarrier" stroke-width="0"></g>
+            <g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g>
+            <g id="SVGRepo_iconCarrier">
+                <defs>
+                    <style>.cls-1{fill:none;stroke:currentColor;stroke-miterlimit:10;stroke-width:1.92px;}</style>
+                </defs>
+                <line class="cls-1" x1="0.5" y1="3.35" x2="12" y2="3.35"></line>
+                <line class="cls-1" x1="6.25" y1="0.48" x2="6.25" y2="3.35"></line>
+                <path class="cls-1" d="M9.12,3.35c0,3.52-3.28,8.2-7.66,10.55"></path>
+                <path class="cls-1" d="M4.51,7.37A16.4,16.4,0,0,0,11,13.9"></path>
+                <polyline class="cls-1" points="12.96 22.52 16.79 11.98 17.75 11.98 21.58 22.52"></polyline>
+                <line class="cls-1" x1="20.43" y1="18.69" x2="15.07" y2="18.69"></line>
+                <line class="cls-1" x1="11.04" y1="22.52" x2="14.88" y2="22.52"></line>
+                <line class="cls-1" x1="19.67" y1="22.52" x2="23.5" y2="22.52"></line>
+            </g>
+        `;
       const iconWrapper = document.createElement("div");
       iconWrapper.style.width = "50px";
       iconWrapper.style.height = "50px";
@@ -1486,8 +1515,8 @@
       iconWrapper.style.display = "flex";
       iconWrapper.style.alignItems = "center";
       iconWrapper.style.justifyContent = "center";
-      this.updateButtonLanguage();
       iconWrapper.appendChild(this.iconButton);
+      this.iconButton.appendChild(svgElement);
       this.container.addEventListener("mousedown", this.handleMouseDown);
       this.container.addEventListener("touchstart", this.handleTouchStart, {
         passive: false,
