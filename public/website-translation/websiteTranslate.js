@@ -1414,7 +1414,12 @@
     restorePosition() {
       if (!this.container) return;
       const position = this.loadPosition();
-      if (position) {
+      const isValidSaved =
+        position &&
+        Number.isFinite(position.x) &&
+        Number.isFinite(position.y) &&
+        !(Math.round(position.x) === 0 && Math.round(position.y) === 0);
+      if (isValidSaved) {
         this.container.style.left = `${position.x}px`;
         this.container.style.top = `${position.y}px`;
         this.container.style.right = "auto";
@@ -1613,6 +1618,17 @@
       this.container.appendChild(iconWrapper);
       this.container.appendChild(this.languageList);
       this.restorePosition();
+      if (
+        !this.container.style.left &&
+        !this.container.style.top &&
+        !this.container.style.right &&
+        !this.container.style.bottom
+      ) {
+        this.container.style.left = "auto";
+        this.container.style.top = "auto";
+        this.container.style.right = "24px";
+        this.container.style.bottom = "24px";
+      }
       window.addEventListener("resize", this.handleWindowResize);
       window.addEventListener("orientationchange", this.handleWindowResize);
       this.handleWindowResize();
