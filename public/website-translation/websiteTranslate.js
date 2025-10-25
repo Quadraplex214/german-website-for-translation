@@ -1219,7 +1219,7 @@
             #${SELECTORS.DROPDOWN_CONTAINER} {
                 position: fixed;
                 bottom: 24px;
-                left: 24px;
+                right: 24px;
                 z-index: 2147483647;
                 width: 50px;
                 height: 50px;
@@ -1420,10 +1420,10 @@
         this.container.style.right = "auto";
         this.container.style.bottom = "auto";
       } else {
-        this.container.style.left = "24px";
-        this.container.style.bottom = "24px";
-        this.container.style.right = "auto";
+        this.container.style.left = "auto";
         this.container.style.top = "auto";
+        this.container.style.right = "24px";
+        this.container.style.bottom = "24px";
       }
     }
     // Local storage methods
