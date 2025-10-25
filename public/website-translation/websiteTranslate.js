@@ -121,10 +121,10 @@
         const retryButton = document.createElement("button");
         retryButton.textContent = "Retry";
         retryButton.style.cssText = `
-              background: white; color: #dc2626; border: none;
-              padding: 4px 12px; border-radius: 4px; cursor: pointer;
-              font-size: 12px; font-weight: 500; margin-top: 4px;
-          `;
+                background: white; color: #dc2626; border: none;
+                padding: 4px 12px; border-radius: 4px; cursor: pointer;
+                font-size: 12px; font-weight: 500; margin-top: 4px;
+            `;
         retryButton.onclick = () => {
           errorDiv.remove();
           retryCallback();
@@ -132,11 +132,11 @@
         errorContent.appendChild(retryButton);
       }
       errorDiv.style.cssText = `
-          position: fixed; bottom: 24px; right: 24px; z-index: 9999;
-          background: #dc2626; color: white; padding: 12px 16px;
-          border-radius: 8px; font: 14px/1.4 sans-serif;
-          max-width: 320px; box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-      `;
+            position: fixed; bottom: 24px; right: 24px; z-index: 9999;
+            background: #dc2626; color: white; padding: 12px 16px;
+            border-radius: 8px; font: 14px/1.4 sans-serif;
+            max-width: 320px; box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        `;
       errorDiv.appendChild(errorContent);
       document.body.appendChild(errorDiv);
       const duration =
@@ -1082,6 +1082,24 @@
           });
         }
       };
+      this.handleWindowResize = () => {
+        if (!this.container) return;
+        const rect = this.container.getBoundingClientRect();
+        const clamped = this.constrainToViewport(rect.left, rect.top);
+        if (
+          Math.round(rect.left) !== Math.round(clamped.x) ||
+          Math.round(rect.top) !== Math.round(clamped.y)
+        ) {
+          this.container.style.left = `${clamped.x}px`;
+          this.container.style.top = `${clamped.y}px`;
+          this.container.style.right = "auto";
+          this.container.style.bottom = "auto";
+          this.savePosition({ x: clamped.x, y: clamped.y });
+        }
+        if (this.isExpanded) {
+          this.positionLanguageList();
+        }
+      };
       this.toggleLanguageList = (_e) => {
         if (
           !this.container ||
@@ -1136,6 +1154,8 @@
       if (existing) existing.remove();
       const style = document.getElementById(SELECTORS.DROPDOWN_STYLE);
       if (style) style.remove();
+      window.removeEventListener("resize", this.handleWindowResize);
+      window.removeEventListener("orientationchange", this.handleWindowResize);
       this.container = null;
       this.iconButton = null;
       this.languageList = null;
@@ -1153,22 +1173,22 @@
       svgElement.setAttribute("fill", "currentColor");
       svgElement.setAttribute("stroke", "currentColor");
       svgElement.innerHTML = `
-          <g id="SVGRepo_bgCarrier" stroke-width="0"></g>
-          <g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g>
-          <g id="SVGRepo_iconCarrier">
-              <defs>
-                  <style>.cls-1{fill:none;stroke:currentColor;stroke-miterlimit:10;stroke-width:1.92px;}</style>
-              </defs>
-              <line class="cls-1" x1="0.5" y1="3.35" x2="12" y2="3.35"></line>
-              <line class="cls-1" x1="6.25" y1="0.48" x2="6.25" y2="3.35"></line>
-              <path class="cls-1" d="M9.12,3.35c0,3.52-3.28,8.2-7.66,10.55"></path>
-              <path class="cls-1" d="M4.51,7.37A16.4,16.4,0,0,0,11,13.9"></path>
-              <polyline class="cls-1" points="12.96 22.52 16.79 11.98 17.75 11.98 21.58 22.52"></polyline>
-              <line class="cls-1" x1="20.43" y1="18.69" x2="15.07" y2="18.69"></line>
-              <line class="cls-1" x1="11.04" y1="22.52" x2="14.88" y2="22.52"></line>
-              <line class="cls-1" x1="19.67" y1="22.52" x2="23.5" y2="22.52"></line>
-          </g>
-      `;
+            <g id="SVGRepo_bgCarrier" stroke-width="0"></g>
+            <g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g>
+            <g id="SVGRepo_iconCarrier">
+                <defs>
+                    <style>.cls-1{fill:none;stroke:currentColor;stroke-miterlimit:10;stroke-width:1.92px;}</style>
+                </defs>
+                <line class="cls-1" x1="0.5" y1="3.35" x2="12" y2="3.35"></line>
+                <line class="cls-1" x1="6.25" y1="0.48" x2="6.25" y2="3.35"></line>
+                <path class="cls-1" d="M9.12,3.35c0,3.52-3.28,8.2-7.66,10.55"></path>
+                <path class="cls-1" d="M4.51,7.37A16.4,16.4,0,0,0,11,13.9"></path>
+                <polyline class="cls-1" points="12.96 22.52 16.79 11.98 17.75 11.98 21.58 22.52"></polyline>
+                <line class="cls-1" x1="20.43" y1="18.69" x2="15.07" y2="18.69"></line>
+                <line class="cls-1" x1="11.04" y1="22.52" x2="14.88" y2="22.52"></line>
+                <line class="cls-1" x1="19.67" y1="22.52" x2="23.5" y2="22.52"></line>
+            </g>
+        `;
       this.iconButton.appendChild(svgElement);
     }
     update(newOptions) {
@@ -1196,136 +1216,136 @@
       const baseColors = this.getBaseColors(theme);
       const themeColors = baseColors;
       return `
-          #${SELECTORS.DROPDOWN_CONTAINER} {
-              position: fixed;
-              bottom: 24px;
-              right: 24px;
-              z-index: 2147483647;
-              width: 50px;
-              height: 50px;
-              display: flex;
-              flex-direction: column;
-              align-items: center;
-              background: transparent;
-              transition: all 0.3s ease;
-              cursor: move;
-          }
+            #${SELECTORS.DROPDOWN_CONTAINER} {
+                position: fixed;
+                bottom: 24px;
+                right: 24px;
+                z-index: 2147483647;
+                width: 50px;
+                height: 50px;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                background: transparent;
+                transition: all 0.3s ease;
+                cursor: move;
+            }
 
-          #${SELECTORS.DROPDOWN} {
-              width: 100%;
-              height: 100%;
-              border-radius: 50%;
-              background: var(--tl-bg, ${themeColors.bg});
-              border: var(--tl-border, ${themeColors.border});
-              box-shadow: var(--tl-box-shadow, ${themeColors.shadow});
-              display: flex;
-              align-items: center;
-              justify-content: center;
-              cursor: move;
-              transition: all 0.3s ease;
-              color: var(--tl-color, ${themeColors.color});
-              position: absolute;
-              top: 0;
-              left: 0;
-              z-index: 1;
-              font-family: inherit;
-              font-size: 12px;
-              font-weight: 500;
-          }
+            #${SELECTORS.DROPDOWN} {
+                width: 100%;
+                height: 100%;
+                border-radius: 50%;
+                background: var(--tl-bg, ${themeColors.bg});
+                border: var(--tl-border, ${themeColors.border});
+                box-shadow: var(--tl-box-shadow, ${themeColors.shadow});
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                cursor: move;
+                transition: all 0.3s ease;
+                color: var(--tl-color, ${themeColors.color});
+                position: absolute;
+                top: 0;
+                left: 0;
+                z-index: 1;
+                font-family: inherit;
+                font-size: 12px;
+                font-weight: 500;
+            }
 
-          #${SELECTORS.DROPDOWN}:hover {
-              transform: scale(1.05);
-          }
+            #${SELECTORS.DROPDOWN}:hover {
+                transform: scale(1.05);
+            }
 
-          #${SELECTORS.DROPDOWN}:disabled {
-              opacity: 0.5;
-              cursor: not-allowed;
-          }
+            #${SELECTORS.DROPDOWN}:disabled {
+                opacity: 0.5;
+                cursor: not-allowed;
+            }
 
-          #${SELECTORS.DROPDOWN_CONTAINER} .language-list {
-              display: none;
-              width: 200px;
-              min-height: 50px; /* Match button height */
-              max-height: 300px;
-              overflow-y: auto;
-              background: var(--tl-bg, ${themeColors.bg});
-              border-radius: 8px;
-              box-shadow: var(--tl-box-shadow, ${themeColors.shadow});
-              padding: 10px 0;
-              position: fixed;
-              z-index: 2147483648; /* Ensure it's above other elements */
-          }
+            #${SELECTORS.DROPDOWN_CONTAINER} .language-list {
+                display: none;
+                width: 200px;
+                min-height: 50px; /* Match button height */
+                max-height: 300px;
+                overflow-y: auto;
+                background: var(--tl-bg, ${themeColors.bg});
+                border-radius: 8px;
+                box-shadow: var(--tl-box-shadow, ${themeColors.shadow});
+                padding: 10px 0;
+                position: fixed;
+                z-index: 2147483648; /* Ensure it's above other elements */
+            }
 
-          #${SELECTORS.DROPDOWN_CONTAINER}.expanded .language-list {
-              display: block;
-          }
+            #${SELECTORS.DROPDOWN_CONTAINER}.expanded .language-list {
+                display: block;
+            }
 
-          #${SELECTORS.DROPDOWN_CONTAINER} .language-list .language-option {
-              padding: var(--tl-option-padding, 8px 12px);
-              cursor: pointer;
-              transition: background-color 0.2s ease;
-              color: var(--tl-color, ${themeColors.color});
-              font-size: var(--tl-option-font-size, 12px);
-              font-weight: var(--tl-option-font-weight, 400);
-              font-family: var(--tl-option-font-family, inherit);
-              line-height: var(--tl-option-line-height, 1.3);
-              white-space: nowrap;
-              overflow: hidden;
-              text-overflow: ellipsis;
-          }
+            #${SELECTORS.DROPDOWN_CONTAINER} .language-list .language-option {
+                padding: var(--tl-option-padding, 8px 12px);
+                cursor: pointer;
+                transition: background-color 0.2s ease;
+                color: var(--tl-color, ${themeColors.color});
+                font-size: var(--tl-option-font-size, 12px);
+                font-weight: var(--tl-option-font-weight, 400);
+                font-family: var(--tl-option-font-family, inherit);
+                line-height: var(--tl-option-line-height, 1.3);
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
 
-          #${SELECTORS.DROPDOWN_CONTAINER} .language-list .language-option:hover {
-              background-color: var(--tl-bg-hover, ${themeColors.bgHover});
-          }
+            #${SELECTORS.DROPDOWN_CONTAINER} .language-list .language-option:hover {
+                background-color: var(--tl-bg-hover, ${themeColors.bgHover});
+            }
 
-          #${SELECTORS.DROPDOWN_CONTAINER} .language-list .language-option.selected {
-              background-color: var(--tl-selected-bg, rgba(0,0,0,0.1));
-              font-weight: bold;
-          }
-          
-          #${SELECTORS.POWERED_BY} {
-              display: flex !important;
-              align-items: center !important;
-              justify-content: center !important;
-              gap: 6px !important;
-              
-              background: var(--tl-powered-bg, rgba(0,0,0,0.05)) !important;
-              border-top: 1px solid var(--tl-powered-border, rgba(0,0,0,0.1)) !important;
-              
-              font-size: 10px !important;
-              font-weight: 400 !important;
-              color: var(--tl-powered-color, #666) !important;
-              text-decoration: none !important;
-              line-height: 1 !important;
-              
-              padding: 6px 8px !important;
-              margin: 0 !important;
-              
-              cursor: pointer !important;
-              transition: background-color 0.2s ease !important;
-              
-              pointer-events: auto !important;
-              user-select: none !important;
-              -webkit-user-select: none !important;
-              -moz-user-select: none !important;
-          }
+            #${SELECTORS.DROPDOWN_CONTAINER} .language-list .language-option.selected {
+                background-color: var(--tl-selected-bg, rgba(0,0,0,0.1));
+                font-weight: bold;
+            }
+            
+            #${SELECTORS.POWERED_BY} {
+                display: flex !important;
+                align-items: center !important;
+                justify-content: center !important;
+                gap: 6px !important;
+                
+                background: var(--tl-powered-bg, rgba(0,0,0,0.05)) !important;
+                border-top: 1px solid var(--tl-powered-border, rgba(0,0,0,0.1)) !important;
+                
+                font-size: 10px !important;
+                font-weight: 400 !important;
+                color: var(--tl-powered-color, #666) !important;
+                text-decoration: none !important;
+                line-height: 1 !important;
+                
+                padding: 6px 8px !important;
+                margin: 0 !important;
+                
+                cursor: pointer !important;
+                transition: background-color 0.2s ease !important;
+                
+                pointer-events: auto !important;
+                user-select: none !important;
+                -webkit-user-select: none !important;
+                -moz-user-select: none !important;
+            }
 
-          #${SELECTORS.DROPDOWN_CONTAINER}.expanded #${SELECTORS.POWERED_BY} {
-              display: flex;
-              padding: var(--tl-mobile-powered-padding, 4px 6px) !important;
-          }
-          
-          #${SELECTORS.POWERED_BY}:hover {
-              background: var(--tl-powered-bg-hover, rgba(0,0,0,0.08)) !important;
-          }
-          
-          #${SELECTORS.DROPDOWN_CONTAINER} .language-list .language-option.translation-status {
-              text-align: center;
-              font-style: italic;
-              padding: 12px;
-              color: var(--tl-color-muted, #888);
-          }
-      `;
+            #${SELECTORS.DROPDOWN_CONTAINER}.expanded #${SELECTORS.POWERED_BY} {
+                display: flex;
+                padding: var(--tl-mobile-powered-padding, 4px 6px) !important;
+            }
+            
+            #${SELECTORS.POWERED_BY}:hover {
+                background: var(--tl-powered-bg-hover, rgba(0,0,0,0.08)) !important;
+            }
+            
+            #${SELECTORS.DROPDOWN_CONTAINER} .language-list .language-option.translation-status {
+                text-align: center;
+                font-style: italic;
+                padding: 12px;
+                color: var(--tl-color-muted, #888);
+            }
+        `;
     }
     getBaseColors(theme) {
       return theme === "light"
@@ -1544,22 +1564,22 @@
       svgElement.setAttribute("fill", "currentColor");
       svgElement.setAttribute("stroke", "currentColor");
       svgElement.innerHTML = `
-          <g id="SVGRepo_bgCarrier" stroke-width="0"></g>
-          <g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g>
-          <g id="SVGRepo_iconCarrier">
-              <defs>
-                  <style>.cls-1{fill:none;stroke:currentColor;stroke-miterlimit:10;stroke-width:1.92px;}</style>
-              </defs>
-              <line class="cls-1" x1="0.5" y1="3.35" x2="12" y2="3.35"></line>
-              <line class="cls-1" x1="6.25" y1="0.48" x2="6.25" y2="3.35"></line>
-              <path class="cls-1" d="M9.12,3.35c0,3.52-3.28,8.2-7.66,10.55"></path>
-              <path class="cls-1" d="M4.51,7.37A16.4,16.4,0,0,0,11,13.9"></path>
-              <polyline class="cls-1" points="12.96 22.52 16.79 11.98 17.75 11.98 21.58 22.52"></polyline>
-              <line class="cls-1" x1="20.43" y1="18.69" x2="15.07" y2="18.69"></line>
-              <line class="cls-1" x1="11.04" y1="22.52" x2="14.88" y2="22.52"></line>
-              <line class="cls-1" x1="19.67" y1="22.52" x2="23.5" y2="22.52"></line>
-          </g>
-      `;
+            <g id="SVGRepo_bgCarrier" stroke-width="0"></g>
+            <g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g>
+            <g id="SVGRepo_iconCarrier">
+                <defs>
+                    <style>.cls-1{fill:none;stroke:currentColor;stroke-miterlimit:10;stroke-width:1.92px;}</style>
+                </defs>
+                <line class="cls-1" x1="0.5" y1="3.35" x2="12" y2="3.35"></line>
+                <line class="cls-1" x1="6.25" y1="0.48" x2="6.25" y2="3.35"></line>
+                <path class="cls-1" d="M9.12,3.35c0,3.52-3.28,8.2-7.66,10.55"></path>
+                <path class="cls-1" d="M4.51,7.37A16.4,16.4,0,0,0,11,13.9"></path>
+                <polyline class="cls-1" points="12.96 22.52 16.79 11.98 17.75 11.98 21.58 22.52"></polyline>
+                <line class="cls-1" x1="20.43" y1="18.69" x2="15.07" y2="18.69"></line>
+                <line class="cls-1" x1="11.04" y1="22.52" x2="14.88" y2="22.52"></line>
+                <line class="cls-1" x1="19.67" y1="22.52" x2="23.5" y2="22.52"></line>
+            </g>
+        `;
       const iconWrapper = document.createElement("div");
       iconWrapper.style.width = "50px";
       iconWrapper.style.height = "50px";
@@ -1588,6 +1608,9 @@
       this.container.appendChild(iconWrapper);
       this.container.appendChild(this.languageList);
       this.restorePosition();
+      window.addEventListener("resize", this.handleWindowResize);
+      window.addEventListener("orientationchange", this.handleWindowResize);
+      this.handleWindowResize();
       if (this.options.isTranslating || this.options.disabled) {
         this.iconButton.disabled = true;
         this.iconButton.setAttribute(
@@ -2843,33 +2866,33 @@
       }
       const style = document.createElement("style");
       style.textContent = `
-          .tl-skeleton {
-              color: transparent !important;
-              background-color: var(--skeleton-bg-color, #e0e0e0) !important;
-              background-image: linear-gradient(
-                  90deg,
-                  var(--skeleton-bg-color, #e0e0e0),
-                  var(--skeleton-highlight-color, #f0f0f0),
-                  var(--skeleton-bg-color, #e0e0e0)
-              ) !important;
-              background-size: 200% 100% !important;
-              animation: skeleton-pulse 1.5s linear infinite !important;
-              border-radius: 4px !important;
-              user-select: none !important;
-              margin-left: 1px !important;
-              margin-right: 1px !important;
-              -webkit-user-select: none !important;
-          }
+            .tl-skeleton {
+                color: transparent !important;
+                background-color: var(--skeleton-bg-color, #e0e0e0) !important;
+                background-image: linear-gradient(
+                    90deg,
+                    var(--skeleton-bg-color, #e0e0e0),
+                    var(--skeleton-highlight-color, #f0f0f0),
+                    var(--skeleton-bg-color, #e0e0e0)
+                ) !important;
+                background-size: 200% 100% !important;
+                animation: skeleton-pulse 1.5s linear infinite !important;
+                border-radius: 4px !important;
+                user-select: none !important;
+                margin-left: 1px !important;
+                margin-right: 1px !important;
+                -webkit-user-select: none !important;
+            }
 
-          @keyframes skeleton-pulse {
-              0% {
-                  background-position: 100% 0;
-              }
-              100% {
-                  background-position: -100% 0;
-              }
-          }
-      `;
+            @keyframes skeleton-pulse {
+                0% {
+                    background-position: 100% 0;
+                }
+                100% {
+                    background-position: -100% 0;
+                }
+            }
+        `;
       document.head.appendChild(style);
       this.updateLanguageDropdown();
       this.startObserver();
