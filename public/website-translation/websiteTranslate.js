@@ -1209,6 +1209,7 @@
                 background: transparent;
                 transition: all 0.3s ease;
                 cursor: move;
+                font-family: var(--tl-font-family, 'Inter', sans-serif);
             }
 
             #${SELECTORS.DROPDOWN} {
@@ -1228,7 +1229,7 @@
                 top: 0;
                 left: 0;
                 z-index: 1;
-                font-family: inherit;
+                font-family: var(--tl-font-family, 'Inter', sans-serif);
                 font-size: 12px;
                 font-weight: 500;
             }
@@ -1254,6 +1255,7 @@
                 padding: 10px 0;
                 position: fixed;
                 z-index: 2147483648; /* Ensure it's above other elements */
+                font-family: var(--tl-font-family, 'Inter', sans-serif);
             }
 
             #${SELECTORS.DROPDOWN_CONTAINER}.expanded .language-list {
@@ -1267,17 +1269,17 @@
                 color: var(--tl-color, ${themeColors.color});
                 font-size: var(--tl-option-font-size, 12px);
                 font-weight: var(--tl-option-font-weight, 400);
-                font-family: var(--tl-option-font-family, inherit);
+                font-family: var(--tl-option-font-family, var(--tl-font-family, 'Inter', sans-serif));
                 line-height: var(--tl-option-line-height, 1.3);
                 white-space: nowrap;
                 overflow: hidden;
                 text-overflow: ellipsis;
             }
-
+            
             #${SELECTORS.DROPDOWN_CONTAINER} .language-list .language-option:hover {
                 background-color: var(--tl-bg-hover, ${themeColors.bgHover});
             }
-
+            
             #${SELECTORS.DROPDOWN_CONTAINER} .language-list .language-option.selected {
                 background-color: var(--tl-selected-bg, rgba(0,0,0,0.1));
                 font-weight: bold;
@@ -1308,6 +1310,7 @@
                 user-select: none !important;
                 -webkit-user-select: none !important;
                 -moz-user-select: none !important;
+                font-family: var(--tl-font-family, 'Inter', sans-serif) !important;
             }
 
             #${SELECTORS.DROPDOWN_CONTAINER}.expanded #${SELECTORS.POWERED_BY} {
@@ -1324,6 +1327,7 @@
                 font-style: italic;
                 padding: 12px;
                 color: var(--tl-color-muted, #888);
+                font-family: var(--tl-font-family, 'Inter', sans-serif);
             }
         `;
     }
