@@ -1186,9 +1186,11 @@
               ? "Translation is in progress"
               : "Translation service unavailable"
           );
+          this.positionLanguageList();
         } else {
           this.iconButton.disabled = false;
           this.iconButton.removeAttribute("title");
+          this.positionLanguageList();
         }
       }
     }
