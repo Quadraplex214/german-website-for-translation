@@ -1211,11 +1211,11 @@
       const baseColors = this.getBaseColors(theme);
       const themeColors = baseColors;
       const thumbColor =
-        theme === "light" ? "rgba(0,0,0,0.6)" : "rgba(255,255,255,0.7)";
+        theme === "light" ? "rgba(0,0,0,0.45)" : "rgba(255,255,255,0.45)";
       const thumbHoverColor =
-        theme === "light" ? "rgba(0,0,0,0.8)" : "rgba(255,255,255,0.9)";
+        theme === "light" ? "rgba(0,0,0,0.7)" : "rgba(255,255,255,0.7)";
       const trackColor =
-        theme === "light" ? "rgba(0,0,0,0.12)" : "rgba(255,255,255,0.18)";
+        theme === "light" ? "rgba(0,0,0,0.12)" : "rgba(255,255,255,0.12)";
       return `
             #${SELECTORS.DROPDOWN_CONTAINER} {
                 position: fixed;
@@ -1280,6 +1280,7 @@
 				/* Modern scrollbar styling */
 				scrollbar-width: auto; /* Firefox */
 				scrollbar-color: var(--tl-scrollbar-thumb, ${thumbColor}) var(--tl-scrollbar-track, ${trackColor}); /* Firefox */
+				scrollbar-gutter: stable;
 				--tl-scrollbar-thumb: ${thumbColor};
 				--tl-scrollbar-thumb-hover: ${thumbHoverColor};
 				--tl-scrollbar-track: ${trackColor};
