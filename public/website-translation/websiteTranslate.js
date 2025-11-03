@@ -1211,9 +1211,11 @@
       const baseColors = this.getBaseColors(theme);
       const themeColors = baseColors;
       const thumbColor =
-        theme === "light" ? "rgba(0,0,0,0.35)" : "rgba(255,255,255,0.35)";
+        theme === "light" ? "rgba(0,0,0,0.6)" : "rgba(255,255,255,0.7)";
       const thumbHoverColor =
-        theme === "light" ? "rgba(0,0,0,0.55)" : "rgba(255,255,255,0.55)";
+        theme === "light" ? "rgba(0,0,0,0.8)" : "rgba(255,255,255,0.9)";
+      const trackColor =
+        theme === "light" ? "rgba(0,0,0,0.12)" : "rgba(255,255,255,0.18)";
       return `
             #${SELECTORS.DROPDOWN_CONTAINER} {
                 position: fixed;
@@ -1276,10 +1278,11 @@
 				z-index: 2147483648; /* Ensure it's above other elements */
                 font-family: var(--tl-font-family, 'Inter', sans-serif);
 				/* Modern scrollbar styling */
-				scrollbar-width: thin; /* Firefox */
-				scrollbar-color: var(--tl-scrollbar-thumb, ${thumbColor}) transparent; /* Firefox */
+				scrollbar-width: auto; /* Firefox */
+				scrollbar-color: var(--tl-scrollbar-thumb, ${thumbColor}) var(--tl-scrollbar-track, ${trackColor}); /* Firefox */
 				--tl-scrollbar-thumb: ${thumbColor};
 				--tl-scrollbar-thumb-hover: ${thumbHoverColor};
+				--tl-scrollbar-track: ${trackColor};
             }
 
             #${SELECTORS.DROPDOWN_CONTAINER}.expanded .language-list {
@@ -1291,7 +1294,7 @@
 				width: 8px;
 			}
 			#${SELECTORS.DROPDOWN_CONTAINER} .language-list::-webkit-scrollbar-track {
-				background: transparent;
+				background: var(--tl-scrollbar-track, ${trackColor});
 			}
 			#${SELECTORS.DROPDOWN_CONTAINER} .language-list::-webkit-scrollbar-thumb {
 				background-color: var(--tl-scrollbar-thumb, ${thumbColor});
