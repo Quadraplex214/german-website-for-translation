@@ -1211,11 +1211,9 @@
       const baseColors = this.getBaseColors(theme);
       const themeColors = baseColors;
       const thumbColor =
-        theme === "light" ? "rgba(0,0,0,0.45)" : "rgba(255,255,255,0.45)";
+        theme === "light" ? "rgba(0,0,0,0.35)" : "rgba(255,255,255,0.35)";
       const thumbHoverColor =
-        theme === "light" ? "rgba(0,0,0,0.7)" : "rgba(255,255,255,0.7)";
-      const trackColor =
-        theme === "light" ? "rgba(0,0,0,0.12)" : "rgba(255,255,255,0.12)";
+        theme === "light" ? "rgba(0,0,0,0.55)" : "rgba(255,255,255,0.55)";
       return `
             #${SELECTORS.DROPDOWN_CONTAINER} {
                 position: fixed;
@@ -1270,6 +1268,7 @@
                 min-height: 50px; /* Match button height */
                 max-height: 300px;
                 overflow-y: scroll;
+                overflow-x: hidden;
                 background: var(--tl-bg, ${themeColors.bg});
                 border-radius: 8px;
                 box-shadow: var(--tl-box-shadow, ${themeColors.shadow});
@@ -1278,33 +1277,45 @@
 				z-index: 2147483648; /* Ensure it's above other elements */
                 font-family: var(--tl-font-family, 'Inter', sans-serif);
 				/* Modern scrollbar styling */
-				scrollbar-width: auto; /* Firefox */
-				scrollbar-color: var(--tl-scrollbar-thumb, ${thumbColor}) var(--tl-scrollbar-track, ${trackColor}); /* Firefox */
-				scrollbar-gutter: stable;
+				scrollbar-width: thin; /* Firefox */
+				scrollbar-color: var(--tl-scrollbar-thumb, ${thumbColor}) var(--tl-scrollbar-track, transparent); /* Firefox */
 				--tl-scrollbar-thumb: ${thumbColor};
 				--tl-scrollbar-thumb-hover: ${thumbHoverColor};
-				--tl-scrollbar-track: ${trackColor};
+                display: flex;
+                flex-direction: column;
             }
 
-            #${SELECTORS.DROPDOWN_CONTAINER}.expanded .language-list {
-                display: block;
+            #${SELECTORS.DROPDOWN_CONTAINER} .language-list .language-options-container {
+                flex: 1;
+                overflow-y: scroll;
+                overflow-x: hidden;
+                scrollbar-width: thin;
+                scrollbar-color: var(--tl-scrollbar-thumb, ${thumbColor}) transparent;
             }
 
 			/* WebKit-based browsers (Chrome, Edge, Safari) */
-			#${SELECTORS.DROPDOWN_CONTAINER} .language-list::-webkit-scrollbar {
+			#${SELECTORS.DROPDOWN_CONTAINER} .language-list::-webkit-scrollbar,
+			#${SELECTORS.DROPDOWN_CONTAINER} .language-list .language-options-container::-webkit-scrollbar {
 				width: 8px;
 			}
-			#${SELECTORS.DROPDOWN_CONTAINER} .language-list::-webkit-scrollbar-track {
-				background: var(--tl-scrollbar-track, ${trackColor});
+			#${SELECTORS.DROPDOWN_CONTAINER} .language-list::-webkit-scrollbar-track,
+			#${SELECTORS.DROPDOWN_CONTAINER} .language-list .language-options-container::-webkit-scrollbar-track {
+				background: transparent;
 			}
-			#${SELECTORS.DROPDOWN_CONTAINER} .language-list::-webkit-scrollbar-thumb {
+			#${SELECTORS.DROPDOWN_CONTAINER} .language-list::-webkit-scrollbar-thumb,
+			#${SELECTORS.DROPDOWN_CONTAINER} .language-list .language-options-container::-webkit-scrollbar-thumb {
 				background-color: var(--tl-scrollbar-thumb, ${thumbColor});
 				border-radius: 8px;
 				border: 2px solid transparent;
 			}
-			#${SELECTORS.DROPDOWN_CONTAINER} .language-list::-webkit-scrollbar-thumb:hover {
+			#${SELECTORS.DROPDOWN_CONTAINER} .language-list::-webkit-scrollbar-thumb:hover,
+			#${SELECTORS.DROPDOWN_CONTAINER} .language-list .language-options-container::-webkit-scrollbar-thumb:hover {
 				background-color: var(--tl-scrollbar-thumb-hover, ${thumbHoverColor});
 			}
+
+            #${SELECTORS.DROPDOWN_CONTAINER}.expanded .language-list {
+                display: flex;
+            }
 
             #${SELECTORS.DROPDOWN_CONTAINER} .language-list .language-option {
                 padding: var(--tl-option-padding, 8px 12px);
@@ -1467,6 +1478,8 @@
         translatedDropdownLabels = {},
       } = this.options;
       this.languageList.innerHTML = "";
+      const optionsContainer = document.createElement("div");
+      optionsContainer.classList.add("language-options-container");
       if (this.options.isTranslating || this.options.disabled) {
         const statusOption = document.createElement("div");
         statusOption.classList.add("language-option", "translation-status");
@@ -1477,7 +1490,8 @@
         statusOption.style.cursor = "default";
         statusOption.style.opacity = "0.6";
         statusOption.style.pointerEvents = "none";
-        this.languageList.appendChild(statusOption);
+        optionsContainer.appendChild(statusOption);
+        this.languageList.appendChild(optionsContainer);
         const poweredByLink2 = this.createPoweredByLink();
         if (poweredByLink2) {
           this.languageList.appendChild(poweredByLink2);
@@ -1507,7 +1521,6 @@
         });
       }
       allLanguages.forEach((l) => {
-        var _a;
         const option = document.createElement("div");
         option.classList.add("language-option");
         option.setAttribute("data-lang", l);
@@ -1520,14 +1533,15 @@
           option.classList.add("selected");
         }
         option.addEventListener("click", () => {
-          var _a2, _b;
-          (_b = (_a2 = this.options).onLanguageChange) == null
+          var _a, _b;
+          (_b = (_a = this.options).onLanguageChange) == null
             ? void 0
-            : _b.call(_a2, l);
+            : _b.call(_a, l);
           this.toggleLanguageList(new MouseEvent("click"));
         });
-        (_a = this.languageList) == null ? void 0 : _a.appendChild(option);
+        optionsContainer.appendChild(option);
       });
+      this.languageList.appendChild(optionsContainer);
       const poweredByLink = this.createPoweredByLink();
       if (poweredByLink) {
         this.languageList.appendChild(poweredByLink);
