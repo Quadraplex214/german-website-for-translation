@@ -1267,7 +1267,7 @@
                 width: 200px;
                 min-height: 50px; /* Match button height */
                 max-height: 300px;
-                overflow-y: auto;
+                overflow-y: scroll;
                 background: var(--tl-bg, ${themeColors.bg});
                 border-radius: 8px;
                 box-shadow: var(--tl-box-shadow, ${themeColors.shadow});
