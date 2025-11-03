@@ -1336,7 +1336,7 @@
                 
                 font-size: 10px !important;
                 font-weight: 400 !important;
-                color: var(--tl-powered-color, #666) !important;
+                color: var(--tl-powered-color, #000000) !important;
                 text-decoration: none !important;
                 line-height: 1 !important;
                 
@@ -1371,26 +1371,16 @@
             }
         `;
     }
-    getBaseColors(theme) {
-      return theme === "light"
-        ? {
-            bg: "#ffffff",
-            bgHover: "#f5f5f5",
-            color: "#333333",
-            border: "1px solid #e0e0e0",
-            shadow: "0 2px 8px rgba(0,0,0,0.1)",
-            optionBg: "#ffffff",
-            optionColor: "#333333",
-          }
-        : {
-            bg: "#333333",
-            bgHover: "#555555",
-            color: "#ffffff",
-            border: "none",
-            shadow: "0 2px 8px rgba(0,0,0,0.3)",
-            optionBg: "#333333",
-            optionColor: "#ffffff",
-          };
+    getBaseColors(_theme) {
+      return {
+        bg: "#ffffff",
+        bgHover: "#f5f5f5",
+        color: "#000000",
+        border: "1px solid #e0e0e0",
+        shadow: "0 2px 8px rgba(0,0,0,0.1)",
+        optionBg: "#ffffff",
+        optionColor: "#000000",
+      };
     }
     capitalizeLabel(label) {
       const escapeHtml = (unsafe) => {
@@ -1567,10 +1557,10 @@
       this.iconButton.style.left = "0";
       this.iconButton.style.width = "100%";
       this.iconButton.style.height = "100%";
-      this.iconButton.style.background = "var(--tl-bg, #333333)";
-      this.iconButton.style.border = "var(--tl-border, none)";
+      this.iconButton.style.background = "var(--tl-bg, #ffffff)";
+      this.iconButton.style.border = "var(--tl-border, 1px solid #e0e0e0)";
       this.iconButton.style.borderRadius = "50%";
-      this.iconButton.style.color = "var(--tl-color, #ffffff)";
+      this.iconButton.style.color = "var(--tl-color, #000000)";
       this.iconButton.style.cursor = "pointer";
       this.iconButton.style.display = "flex";
       this.iconButton.style.alignItems = "center";
