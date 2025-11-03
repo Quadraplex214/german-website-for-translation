@@ -6,6 +6,7 @@ import { ThemeProvider } from "@/components/theme-provider";
 import Script from "next/script";
 import { LanguageProvider } from "@/components/language-provider";
 import { Toaster } from "@/components/ui/sonner";
+import ThemeColorController from "@/components/theme-controller-provider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -47,6 +48,7 @@ export default function RootLayout({
           >
             {children}
             <Toaster />
+            <ThemeColorController />
           </ThemeProvider>
         </LanguageProvider>
         <Script
