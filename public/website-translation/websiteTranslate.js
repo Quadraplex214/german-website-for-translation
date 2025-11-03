@@ -1310,6 +1310,8 @@
                 padding: 10px 0 10px 0; /* add top padding inside scroller */
                 flex: 1 1 auto; /* take available space and scroll */
                 scrollbar-gutter: stable both-edges; /* keep scrollbar space visible */
+                /* Persistent visual gutter even when OS uses overlay scrollbars */
+                box-shadow: inset -8px 0 0 var(--tl-scrollbar-track, rgba(0,0,0,0.06));
                 /* Firefox scrollbar */
                 scrollbar-width: thin;
                 scrollbar-color: var(--tl-scrollbar-thumb, ${thumbColor}) var(--tl-scrollbar-track, ${trackColor});
