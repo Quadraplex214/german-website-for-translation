@@ -1271,7 +1271,7 @@
                 background: var(--tl-bg, ${themeColors.bg});
                 border-radius: 8px;
                 box-shadow: var(--tl-box-shadow, ${themeColors.shadow});
-                padding: 10px 0;
+                padding-top: 10px;
                 position: fixed;
 				z-index: 2147483648; /* Ensure it's above other elements */
                 font-family: var(--tl-font-family, 'Inter', sans-serif);
@@ -1365,7 +1365,7 @@
             #${SELECTORS.DROPDOWN_CONTAINER} .language-list .language-option.translation-status {
                 text-align: center;
                 font-style: italic;
-                padding: 12px;
+                padding-top: 12px;
 				color: var(--tl-color-muted, #888);
 				font-family: var(--tl-font-family, 'Inter', sans-serif);
             }
