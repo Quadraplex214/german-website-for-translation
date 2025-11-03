@@ -949,6 +949,7 @@
         this.isDragging = false;
         document.addEventListener("mousemove", this.handleMouseMove);
         document.addEventListener("mouseup", this.handleMouseUp);
+        this.container.style.cursor = "move";
       };
       this.handleMouseMove = (e) => {
         if (this.dragTimer) {
@@ -1208,7 +1209,7 @@
       }
     }
     generateCSS(theme) {
-      const baseColors = this.getBaseColors(theme);
+      const baseColors = this.getBaseColors();
       const themeColors = baseColors;
       const thumbColor =
         theme === "light" ? "rgba(0,0,0,0.35)" : "rgba(255,255,255,0.35)";
@@ -1217,7 +1218,8 @@
       return `
             #${SELECTORS.DROPDOWN_CONTAINER} {
                 position: fixed;
-                inset: auto 17px 80px auto;
+                bottom: 24px;
+                right: 24px;
                 z-index: 2147483647;
                 width: 50px;
                 height: 50px;
@@ -1227,14 +1229,8 @@
                 background: transparent;
                 transition: all 0.3s ease;
 				cursor: default;
-				font-family: inherit;
+                font-family: var(--tl-font-family, 'Inter', sans-serif);
             }
-
-			@media screen and (max-width: 767px) {
-				#${SELECTORS.DROPDOWN_CONTAINER} {
-					inset: auto 14px 24px auto;
-				}
-			}
 
             #${SELECTORS.DROPDOWN} {
                 width: 100%;
@@ -1253,7 +1249,7 @@
                 top: 0;
                 left: 0;
 				z-index: 1;
-				font-family: inherit;
+                font-family: var(--tl-font-family, 'Inter', sans-serif);
                 font-size: 12px;
                 font-weight: 500;
             }
@@ -1272,38 +1268,47 @@
                 width: 200px;
                 min-height: 50px; /* Match button height */
                 max-height: 300px;
-                overflow-y: auto;
                 background: var(--tl-bg, ${themeColors.bg});
                 border-radius: 8px;
                 box-shadow: var(--tl-box-shadow, ${themeColors.shadow});
-                padding: 10px 0;
+                padding: 0; /* inner containers handle padding */
                 position: fixed;
 				z-index: 2147483648; /* Ensure it's above other elements */
-				font-family: inherit;
-				/* Modern scrollbar styling */
-				scrollbar-width: thin; /* Firefox */
-				scrollbar-color: var(--tl-scrollbar-thumb, ${thumbColor}) transparent; /* Firefox */
-				--tl-scrollbar-thumb: ${thumbColor};
-				--tl-scrollbar-thumb-hover: ${thumbHoverColor};
+                font-family: var(--tl-font-family, 'Inter', sans-serif);
+                display: flex;
+                flex-direction: column;
+                overflow: hidden; /* clip inner scrollbars */
             }
 
             #${SELECTORS.DROPDOWN_CONTAINER}.expanded .language-list {
                 display: block;
             }
 
+            /* Scroll container for language options */
+            #${SELECTORS.DROPDOWN_CONTAINER} .language-list .options {
+                padding: 10px 0;
+                overflow-y: auto;
+                flex: 1 1 auto; /* take remaining space and scroll */
+                /* Modern scrollbar styling */
+                scrollbar-width: thin; /* Firefox */
+                scrollbar-color: var(--tl-scrollbar-thumb, ${thumbColor}) transparent; /* Firefox */
+                --tl-scrollbar-thumb: ${thumbColor};
+                --tl-scrollbar-thumb-hover: ${thumbHoverColor};
+            }
+
 			/* WebKit-based browsers (Chrome, Edge, Safari) */
-			#${SELECTORS.DROPDOWN_CONTAINER} .language-list::-webkit-scrollbar {
+			#${SELECTORS.DROPDOWN_CONTAINER} .language-list .options::-webkit-scrollbar {
 				width: 8px;
 			}
-			#${SELECTORS.DROPDOWN_CONTAINER} .language-list::-webkit-scrollbar-track {
+			#${SELECTORS.DROPDOWN_CONTAINER} .language-list .options::-webkit-scrollbar-track {
 				background: transparent;
 			}
-			#${SELECTORS.DROPDOWN_CONTAINER} .language-list::-webkit-scrollbar-thumb {
+			#${SELECTORS.DROPDOWN_CONTAINER} .language-list .options::-webkit-scrollbar-thumb {
 				background-color: var(--tl-scrollbar-thumb, ${thumbColor});
 				border-radius: 8px;
 				border: 2px solid transparent;
 			}
-			#${SELECTORS.DROPDOWN_CONTAINER} .language-list::-webkit-scrollbar-thumb:hover {
+			#${SELECTORS.DROPDOWN_CONTAINER} .language-list .options::-webkit-scrollbar-thumb:hover {
 				background-color: var(--tl-scrollbar-thumb-hover, ${thumbHoverColor});
 			}
 
@@ -1314,7 +1319,7 @@
                 color: var(--tl-color, ${themeColors.color});
                 font-size: var(--tl-option-font-size, 12px);
 				font-weight: var(--tl-option-font-weight, 400);
-				font-family: inherit;
+                font-family: var(--tl-option-font-family, var(--tl-font-family, 'Inter', sans-serif));
                 line-height: var(--tl-option-line-height, 1.3);
                 white-space: nowrap;
                 overflow: hidden;
@@ -1341,7 +1346,7 @@
                 
                 font-size: 10px !important;
                 font-weight: 400 !important;
-                color: var(--tl-powered-color, #666) !important;
+                color: var(--tl-powered-color, #000000) !important;
                 text-decoration: none !important;
                 line-height: 1 !important;
                 
@@ -1355,7 +1360,7 @@
                 user-select: none !important;
                 -webkit-user-select: none !important;
 				-moz-user-select: none !important;
-				font-family: inherit !important;
+				font-family: var(--tl-font-family, 'Inter', sans-serif) !important;
             }
 
             #${SELECTORS.DROPDOWN_CONTAINER}.expanded #${SELECTORS.POWERED_BY} {
@@ -1372,30 +1377,20 @@
                 font-style: italic;
                 padding: 12px;
 				color: var(--tl-color-muted, #888);
-				font-family: inherit;
+				font-family: var(--tl-font-family, 'Inter', sans-serif);
             }
         `;
     }
-    getBaseColors(theme) {
-      return theme === "light"
-        ? {
-            bg: "#ffffff",
-            bgHover: "#f5f5f5",
-            color: "#333333",
-            border: "1px solid #e0e0e0",
-            shadow: "0 2px 8px rgba(0,0,0,0.1)",
-            optionBg: "#ffffff",
-            optionColor: "#333333",
-          }
-        : {
-            bg: "#333333",
-            bgHover: "#555555",
-            color: "#ffffff",
-            border: "none",
-            shadow: "0 2px 8px rgba(0,0,0,0.3)",
-            optionBg: "#333333",
-            optionColor: "#ffffff",
-          };
+    getBaseColors() {
+      return {
+        bg: "#ffffff",
+        bgHover: "#f5f5f5",
+        color: "#000000",
+        border: "1px solid #e0e0e0",
+        shadow: "0 2px 8px rgba(0,0,0,0.1)",
+        optionBg: "#ffffff",
+        optionColor: "#000000",
+      };
     }
     capitalizeLabel(label) {
       const escapeHtml = (unsafe) => {
@@ -1478,6 +1473,8 @@
         translatedDropdownLabels = {},
       } = this.options;
       this.languageList.innerHTML = "";
+      const optionsContainer = document.createElement("div");
+      optionsContainer.classList.add("options");
       if (this.options.isTranslating || this.options.disabled) {
         const statusOption = document.createElement("div");
         statusOption.classList.add("language-option", "translation-status");
@@ -1488,9 +1485,10 @@
         statusOption.style.cursor = "default";
         statusOption.style.opacity = "0.6";
         statusOption.style.pointerEvents = "none";
-        this.languageList.appendChild(statusOption);
+        optionsContainer.appendChild(statusOption);
         const poweredByLink2 = this.createPoweredByLink();
         if (poweredByLink2) {
+          this.languageList.appendChild(optionsContainer);
           this.languageList.appendChild(poweredByLink2);
         }
         return;
@@ -1518,7 +1516,6 @@
         });
       }
       allLanguages.forEach((l) => {
-        var _a;
         const option = document.createElement("div");
         option.classList.add("language-option");
         option.setAttribute("data-lang", l);
@@ -1531,17 +1528,20 @@
           option.classList.add("selected");
         }
         option.addEventListener("click", () => {
-          var _a2, _b;
-          (_b = (_a2 = this.options).onLanguageChange) == null
+          var _a, _b;
+          (_b = (_a = this.options).onLanguageChange) == null
             ? void 0
-            : _b.call(_a2, l);
+            : _b.call(_a, l);
           this.toggleLanguageList(new MouseEvent("click"));
         });
-        (_a = this.languageList) == null ? void 0 : _a.appendChild(option);
+        optionsContainer.appendChild(option);
       });
       const poweredByLink = this.createPoweredByLink();
       if (poweredByLink) {
+        this.languageList.appendChild(optionsContainer);
         this.languageList.appendChild(poweredByLink);
+      } else {
+        this.languageList.appendChild(optionsContainer);
       }
     }
     createPoweredByLink() {
@@ -1572,10 +1572,10 @@
       this.iconButton.style.left = "0";
       this.iconButton.style.width = "100%";
       this.iconButton.style.height = "100%";
-      this.iconButton.style.background = "var(--tl-bg, #333333)";
-      this.iconButton.style.border = "var(--tl-border, none)";
+      this.iconButton.style.background = "var(--tl-bg, #ffffff)";
+      this.iconButton.style.border = "var(--tl-border, 1px solid #e0e0e0)";
       this.iconButton.style.borderRadius = "50%";
-      this.iconButton.style.color = "var(--tl-color, #ffffff)";
+      this.iconButton.style.color = "var(--tl-color, #000000)";
       this.iconButton.style.cursor = "pointer";
       this.iconButton.style.display = "flex";
       this.iconButton.style.alignItems = "center";
@@ -1618,6 +1618,10 @@
       iconWrapper.style.justifyContent = "center";
       this.iconButton.appendChild(svgElement);
       iconWrapper.appendChild(this.iconButton);
+      this.container.addEventListener("mousedown", this.handleMouseDown);
+      this.container.addEventListener("touchstart", this.handleTouchStart, {
+        passive: false,
+      });
       this.iconButton.addEventListener("click", (e) => {
         if (this.didDrag) {
           e.preventDefault();
