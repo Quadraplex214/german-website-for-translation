@@ -1288,33 +1288,44 @@
                 flex-direction: column;
             }
 
-			/* WebKit-based browsers (Chrome, Edge, Safari) for inner options */
+			/* Hide native scrollbars (we'll render a custom always-visible one) */
 			#${SELECTORS.DROPDOWN_CONTAINER} .language-list .options::-webkit-scrollbar {
-				width: 10px;
-			}
-			#${SELECTORS.DROPDOWN_CONTAINER} .language-list .options::-webkit-scrollbar-track {
-				background: var(--tl-scrollbar-track, ${trackColor});
-			}
-			#${SELECTORS.DROPDOWN_CONTAINER} .language-list .options::-webkit-scrollbar-thumb {
-				background-color: var(--tl-scrollbar-thumb, ${thumbColor});
-				border-radius: 8px;
-				border: 2px solid transparent;
-			}
-			#${SELECTORS.DROPDOWN_CONTAINER} .language-list .options::-webkit-scrollbar-thumb:hover {
-				background-color: var(--tl-scrollbar-thumb-hover, ${thumbHoverColor});
+				width: 0px;
+				height: 0px;
 			}
 
             /* Inner scroll container that holds the language options */
             #${SELECTORS.DROPDOWN_CONTAINER} .language-list .options {
-                overflow-y: scroll; /* reserve gutter so scrollbar is always visible */
-                padding: 10px 0 10px 0; /* add top padding inside scroller */
-                flex: 1 1 auto; /* take available space and scroll */
-                scrollbar-gutter: stable both-edges; /* keep scrollbar space visible */
-                /* Persistent visual gutter even when OS uses overlay scrollbars */
-                box-shadow: inset -10px 0 0 var(--tl-scrollbar-track, ${trackColor});
-                /* Firefox scrollbar */
-                scrollbar-width: auto;
-                scrollbar-color: var(--tl-scrollbar-thumb, ${thumbColor}) var(--tl-scrollbar-track, ${trackColor});
+                position: relative;
+                overflow-y: scroll;
+                padding: 10px 0 10px 0;
+                flex: 1 1 auto;
+                scrollbar-gutter: stable both-edges;
+                /* Hide native scrollbar in Firefox */
+                scrollbar-width: none;
+                scrollbar-color: transparent transparent;
+            }
+
+            /* Custom always-visible scrollbar inside the options area */
+            #${SELECTORS.DROPDOWN_CONTAINER} .language-list .custom-scrollbar-track {
+                position: absolute;
+                top: 0;
+                right: 2px;
+                bottom: 0;
+                width: 8px;
+                background: var(--tl-scrollbar-track, ${trackColor});
+                border-radius: 4px;
+                pointer-events: none; /* do not block clicks on options */
+            }
+            #${SELECTORS.DROPDOWN_CONTAINER} .language-list .custom-scrollbar-thumb {
+                position: absolute;
+                top: 0;
+                right: 0;
+                width: 100%;
+                height: 24px;
+                background: var(--tl-scrollbar-thumb, ${thumbColor});
+                border-radius: 4px;
+                pointer-events: none;
             }
 
             #${SELECTORS.DROPDOWN_CONTAINER} .language-list .language-option {
@@ -1480,6 +1491,11 @@
       this.languageList.innerHTML = "";
       const optionsContainer = document.createElement("div");
       optionsContainer.classList.add("options");
+      const customTrack = document.createElement("div");
+      customTrack.classList.add("custom-scrollbar-track");
+      const customThumb = document.createElement("div");
+      customThumb.classList.add("custom-scrollbar-thumb");
+      customTrack.appendChild(customThumb);
       if (this.options.isTranslating || this.options.disabled) {
         const statusOption = document.createElement("div");
         statusOption.classList.add("language-option", "translation-status");
@@ -1493,6 +1509,7 @@
         optionsContainer.appendChild(statusOption);
         const poweredByLink2 = this.createPoweredByLink();
         if (poweredByLink2) {
+          optionsContainer.appendChild(customTrack);
           this.languageList.appendChild(optionsContainer);
           this.languageList.appendChild(poweredByLink2);
         }
@@ -1543,11 +1560,40 @@
       });
       const poweredByLink = this.createPoweredByLink();
       if (poweredByLink) {
+        optionsContainer.appendChild(customTrack);
         this.languageList.appendChild(optionsContainer);
         this.languageList.appendChild(poweredByLink);
       } else {
+        optionsContainer.appendChild(customTrack);
         this.languageList.appendChild(optionsContainer);
       }
+      const updateCustomScrollbar = () => {
+        const contentHeight = optionsContainer.scrollHeight;
+        const viewportHeight = optionsContainer.clientHeight;
+        const maxScroll = Math.max(1, contentHeight - viewportHeight);
+        const ratio = viewportHeight / Math.max(viewportHeight, contentHeight);
+        const minThumb = 24;
+        const thumbHeight = Math.max(
+          minThumb,
+          Math.floor(ratio * viewportHeight)
+        );
+        const scrollTop = optionsContainer.scrollTop;
+        const trackHeight = viewportHeight;
+        const maxThumbTop = Math.max(0, trackHeight - thumbHeight);
+        const thumbTop = Math.min(
+          maxThumbTop,
+          Math.floor((scrollTop / maxScroll) * maxThumbTop)
+        );
+        customThumb.style.height = `${thumbHeight}px`;
+        customThumb.style.top = `${thumbTop}px`;
+        const needsScroll = contentHeight > viewportHeight + 1;
+        customTrack.style.display = needsScroll ? "block" : "none";
+      };
+      optionsContainer.addEventListener("scroll", updateCustomScrollbar);
+      window.addEventListener("resize", updateCustomScrollbar, {
+        passive: true,
+      });
+      updateCustomScrollbar();
     }
     createPoweredByLink() {
       const poweredBy = document.createElement("a");
