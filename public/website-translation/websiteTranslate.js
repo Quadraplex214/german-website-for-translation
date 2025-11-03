@@ -1211,11 +1211,11 @@
       const baseColors = this.getBaseColors(theme);
       const themeColors = baseColors;
       const thumbColor =
-        theme === "light" ? "rgba(0,0,0,0.35)" : "rgba(255,255,255,0.35)";
+        theme === "light" ? "rgba(0,0,0,0.65)" : "rgba(255,255,255,0.75)";
       const thumbHoverColor =
-        theme === "light" ? "rgba(0,0,0,0.55)" : "rgba(255,255,255,0.55)";
+        theme === "light" ? "rgba(0,0,0,0.85)" : "rgba(255,255,255,0.95)";
       const trackColor =
-        theme === "light" ? "rgba(0,0,0,0.06)" : "rgba(255,255,255,0.12)";
+        theme === "light" ? "rgba(0,0,0,0.10)" : "rgba(255,255,255,0.22)";
       return `
             #${SELECTORS.DROPDOWN_CONTAINER} {
                 position: fixed;
@@ -1290,7 +1290,7 @@
 
 			/* WebKit-based browsers (Chrome, Edge, Safari) for inner options */
 			#${SELECTORS.DROPDOWN_CONTAINER} .language-list .options::-webkit-scrollbar {
-				width: 8px;
+				width: 10px;
 			}
 			#${SELECTORS.DROPDOWN_CONTAINER} .language-list .options::-webkit-scrollbar-track {
 				background: var(--tl-scrollbar-track, ${trackColor});
@@ -1311,9 +1311,9 @@
                 flex: 1 1 auto; /* take available space and scroll */
                 scrollbar-gutter: stable both-edges; /* keep scrollbar space visible */
                 /* Persistent visual gutter even when OS uses overlay scrollbars */
-                box-shadow: inset -8px 0 0 var(--tl-scrollbar-track, rgba(0,0,0,0.06));
+                box-shadow: inset -10px 0 0 var(--tl-scrollbar-track, ${trackColor});
                 /* Firefox scrollbar */
-                scrollbar-width: thin;
+                scrollbar-width: auto;
                 scrollbar-color: var(--tl-scrollbar-thumb, ${thumbColor}) var(--tl-scrollbar-track, ${trackColor});
             }
 
