@@ -949,7 +949,6 @@
         this.isDragging = false;
         document.addEventListener("mousemove", this.handleMouseMove);
         document.addEventListener("mouseup", this.handleMouseUp);
-        this.container.style.cursor = "move";
       };
       this.handleMouseMove = (e) => {
         if (this.dragTimer) {
@@ -966,7 +965,7 @@
         ) {
           this.isDragging = true;
           this.didDrag = true;
-          this.container.style.cursor = "grabbing";
+          if (this.iconButton) this.iconButton.style.cursor = "move";
           this.container.style.transition = "none";
         }
         if (!this.isDragging || this.isExpanded) return;
@@ -993,7 +992,7 @@
         if (!this.container) return;
         if (this.isDragging) {
           this.isDragging = false;
-          this.container.style.cursor = "default";
+          if (this.iconButton) this.iconButton.style.cursor = "pointer";
           this.container.style.transition = "";
           const rect = this.container.getBoundingClientRect();
           this.savePosition({
@@ -1043,7 +1042,7 @@
         ) {
           this.isDragging = true;
           this.didDrag = true;
-          this.container.style.cursor = "grabbing";
+          if (this.iconButton) this.iconButton.style.cursor = "move";
           this.container.style.transition = "none";
         }
         if (!this.isDragging || this.isExpanded) return;
@@ -1073,7 +1072,7 @@
         }
         this.isDragging = false;
         this.didDrag = false;
-        this.container.style.cursor = "default";
+        if (this.iconButton) this.iconButton.style.cursor = "pointer";
         this.container.style.transition = "";
         if (this.container) {
           const rect = this.container.getBoundingClientRect();
@@ -1614,8 +1613,8 @@
       iconWrapper.style.justifyContent = "center";
       this.iconButton.appendChild(svgElement);
       iconWrapper.appendChild(this.iconButton);
-      this.container.addEventListener("mousedown", this.handleMouseDown);
-      this.container.addEventListener("touchstart", this.handleTouchStart, {
+      this.iconButton.addEventListener("mousedown", this.handleMouseDown);
+      this.iconButton.addEventListener("touchstart", this.handleTouchStart, {
         passive: false,
       });
       this.iconButton.addEventListener("click", (e) => {
