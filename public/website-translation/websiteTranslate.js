@@ -1274,13 +1274,12 @@
                 position: fixed;
 				z-index: 2147483648; /* Ensure it's above other elements */
                 font-family: var(--tl-font-family, 'Inter', sans-serif);
-                display: flex;
-                flex-direction: column;
                 overflow: hidden; /* only inner options scroll */
             }
 
             #${SELECTORS.DROPDOWN_CONTAINER}.expanded .language-list {
-                display: block;
+                display: flex;
+                flex-direction: column;
             }
 
 			/* WebKit-based browsers (Chrome, Edge, Safari) for inner options */
