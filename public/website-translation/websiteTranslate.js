@@ -1306,10 +1306,10 @@
 
             /* Inner scroll container that holds the language options */
             #${SELECTORS.DROPDOWN_CONTAINER} .language-list .options {
-                overflow-y: auto;
+                overflow-y: scroll; /* reserve gutter so scrollbar is always visible */
                 padding: 10px 0 10px 0; /* add top padding inside scroller */
                 flex: 1 1 auto; /* take available space and scroll */
-                scrollbar-gutter: stable; /* keep scrollbar space visible */
+                scrollbar-gutter: stable both-edges; /* keep scrollbar space visible */
                 /* Firefox scrollbar */
                 scrollbar-width: thin;
                 scrollbar-color: var(--tl-scrollbar-thumb, ${thumbColor}) var(--tl-scrollbar-track, ${trackColor});
