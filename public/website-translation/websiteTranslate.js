@@ -992,7 +992,7 @@
         if (!this.container) return;
         if (this.isDragging) {
           this.isDragging = false;
-          this.container.style.cursor = "move";
+          this.container.style.cursor = "default";
           this.container.style.transition = "";
           const rect = this.container.getBoundingClientRect();
           this.savePosition({
@@ -1072,7 +1072,7 @@
         }
         this.isDragging = false;
         this.didDrag = false;
-        this.container.style.cursor = "move";
+        this.container.style.cursor = "default";
         this.container.style.transition = "";
         if (this.container) {
           const rect = this.container.getBoundingClientRect();
@@ -1097,6 +1097,18 @@
         this.container.classList.toggle("expanded", this.isExpanded);
         if (this.isExpanded && this.container && this.languageList) {
           this.positionLanguageList();
+        }
+      };
+      this.closeLanguageList = () => {
+        if (!this.container) return;
+        this.isExpanded = false;
+        this.container.classList.remove("expanded");
+      };
+      this.handleDocumentClick = (e) => {
+        if (!this.container) return;
+        const target = e.target;
+        if (this.isExpanded && target && !this.container.contains(target)) {
+          this.closeLanguageList();
         }
       };
       this.positionLanguageList = () => {
@@ -1136,6 +1148,7 @@
       if (existing) existing.remove();
       const style = document.getElementById(SELECTORS.DROPDOWN_STYLE);
       if (style) style.remove();
+      document.removeEventListener("click", this.handleDocumentClick);
       this.container = null;
       this.iconButton = null;
       this.languageList = null;
@@ -1197,11 +1210,14 @@
     generateCSS(theme) {
       const baseColors = this.getBaseColors(theme);
       const themeColors = baseColors;
+      const thumbColor =
+        theme === "light" ? "rgba(0,0,0,0.35)" : "rgba(255,255,255,0.35)";
+      const thumbHoverColor =
+        theme === "light" ? "rgba(0,0,0,0.55)" : "rgba(255,255,255,0.55)";
       return `
             #${SELECTORS.DROPDOWN_CONTAINER} {
                 position: fixed;
-                bottom: 24px;
-                right: 24px;
+                inset: auto 17px 80px auto;
                 z-index: 2147483647;
                 width: 50px;
                 height: 50px;
@@ -1210,9 +1226,15 @@
                 align-items: center;
                 background: transparent;
                 transition: all 0.3s ease;
-                cursor: move;
-                font-family: var(--tl-font-family, 'Inter', sans-serif);
+				cursor: default;
+				font-family: inherit;
             }
+
+			@media screen and (max-width: 767px) {
+				#${SELECTORS.DROPDOWN_CONTAINER} {
+					inset: auto 14px 24px auto;
+				}
+			}
 
             #${SELECTORS.DROPDOWN} {
                 width: 100%;
@@ -1224,14 +1246,14 @@
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                cursor: move;
+				cursor: pointer;
                 transition: all 0.3s ease;
                 color: var(--tl-color, ${themeColors.color});
                 position: absolute;
                 top: 0;
                 left: 0;
-                z-index: 1;
-                font-family: var(--tl-font-family, 'Inter', sans-serif);
+				z-index: 1;
+				font-family: inherit;
                 font-size: 12px;
                 font-weight: 500;
             }
@@ -1256,13 +1278,34 @@
                 box-shadow: var(--tl-box-shadow, ${themeColors.shadow});
                 padding: 10px 0;
                 position: fixed;
-                z-index: 2147483648; /* Ensure it's above other elements */
-                font-family: var(--tl-font-family, 'Inter', sans-serif);
+				z-index: 2147483648; /* Ensure it's above other elements */
+				font-family: inherit;
+				/* Modern scrollbar styling */
+				scrollbar-width: thin; /* Firefox */
+				scrollbar-color: var(--tl-scrollbar-thumb, ${thumbColor}) transparent; /* Firefox */
+				--tl-scrollbar-thumb: ${thumbColor};
+				--tl-scrollbar-thumb-hover: ${thumbHoverColor};
             }
 
             #${SELECTORS.DROPDOWN_CONTAINER}.expanded .language-list {
                 display: block;
             }
+
+			/* WebKit-based browsers (Chrome, Edge, Safari) */
+			#${SELECTORS.DROPDOWN_CONTAINER} .language-list::-webkit-scrollbar {
+				width: 8px;
+			}
+			#${SELECTORS.DROPDOWN_CONTAINER} .language-list::-webkit-scrollbar-track {
+				background: transparent;
+			}
+			#${SELECTORS.DROPDOWN_CONTAINER} .language-list::-webkit-scrollbar-thumb {
+				background-color: var(--tl-scrollbar-thumb, ${thumbColor});
+				border-radius: 8px;
+				border: 2px solid transparent;
+			}
+			#${SELECTORS.DROPDOWN_CONTAINER} .language-list::-webkit-scrollbar-thumb:hover {
+				background-color: var(--tl-scrollbar-thumb-hover, ${thumbHoverColor});
+			}
 
             #${SELECTORS.DROPDOWN_CONTAINER} .language-list .language-option {
                 padding: var(--tl-option-padding, 8px 12px);
@@ -1270,8 +1313,8 @@
                 transition: background-color 0.2s ease;
                 color: var(--tl-color, ${themeColors.color});
                 font-size: var(--tl-option-font-size, 12px);
-                font-weight: var(--tl-option-font-weight, 400);
-                font-family: var(--tl-option-font-family, var(--tl-font-family, 'Inter', sans-serif));
+				font-weight: var(--tl-option-font-weight, 400);
+				font-family: inherit;
                 line-height: var(--tl-option-line-height, 1.3);
                 white-space: nowrap;
                 overflow: hidden;
@@ -1311,8 +1354,8 @@
                 pointer-events: auto !important;
                 user-select: none !important;
                 -webkit-user-select: none !important;
-                -moz-user-select: none !important;
-                font-family: var(--tl-font-family, 'Inter', sans-serif) !important;
+				-moz-user-select: none !important;
+				font-family: inherit !important;
             }
 
             #${SELECTORS.DROPDOWN_CONTAINER}.expanded #${SELECTORS.POWERED_BY} {
@@ -1328,8 +1371,8 @@
                 text-align: center;
                 font-style: italic;
                 padding: 12px;
-                color: var(--tl-color-muted, #888);
-                font-family: var(--tl-font-family, 'Inter', sans-serif);
+				color: var(--tl-color-muted, #888);
+				font-family: inherit;
             }
         `;
     }
@@ -1519,7 +1562,7 @@
       this.container.id = SELECTORS.DROPDOWN_CONTAINER;
       this.container.setAttribute("data-no-translate", "true");
       this.container.style.position = "fixed";
-      this.container.style.cursor = "move";
+      this.container.style.cursor = "default";
       this.container.style.transition = "none";
       this.iconButton = document.createElement("button");
       this.iconButton.id = SELECTORS.DROPDOWN;
@@ -1533,7 +1576,7 @@
       this.iconButton.style.border = "var(--tl-border, none)";
       this.iconButton.style.borderRadius = "50%";
       this.iconButton.style.color = "var(--tl-color, #ffffff)";
-      this.iconButton.style.cursor = "move";
+      this.iconButton.style.cursor = "pointer";
       this.iconButton.style.display = "flex";
       this.iconButton.style.alignItems = "center";
       this.iconButton.style.justifyContent = "center";
@@ -1575,10 +1618,6 @@
       iconWrapper.style.justifyContent = "center";
       this.iconButton.appendChild(svgElement);
       iconWrapper.appendChild(this.iconButton);
-      this.container.addEventListener("mousedown", this.handleMouseDown);
-      this.container.addEventListener("touchstart", this.handleTouchStart, {
-        passive: false,
-      });
       this.iconButton.addEventListener("click", (e) => {
         if (this.didDrag) {
           e.preventDefault();
@@ -1604,6 +1643,7 @@
         );
       }
       document.body.appendChild(this.container);
+      document.addEventListener("click", this.handleDocumentClick);
     }
   }
   const queued = /* @__PURE__ */ new WeakSet();
