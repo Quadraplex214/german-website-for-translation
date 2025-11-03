@@ -1267,7 +1267,6 @@
                 width: 200px;
                 min-height: 50px; /* Match button height */
                 max-height: 300px;
-                overflow-y: auto;
                 background: var(--tl-bg, ${themeColors.bg});
                 border-radius: 8px;
                 box-shadow: var(--tl-box-shadow, ${themeColors.shadow});
@@ -1275,32 +1274,40 @@
                 position: fixed;
 				z-index: 2147483648; /* Ensure it's above other elements */
                 font-family: var(--tl-font-family, 'Inter', sans-serif);
-				/* Modern scrollbar styling */
-				scrollbar-width: thin; /* Firefox */
-				scrollbar-color: var(--tl-scrollbar-thumb, ${thumbColor}) transparent; /* Firefox */
-				--tl-scrollbar-thumb: ${thumbColor};
-				--tl-scrollbar-thumb-hover: ${thumbHoverColor};
+                display: flex;
+                flex-direction: column;
+                overflow: hidden; /* only inner options scroll */
             }
 
             #${SELECTORS.DROPDOWN_CONTAINER}.expanded .language-list {
                 display: block;
             }
 
-			/* WebKit-based browsers (Chrome, Edge, Safari) */
-			#${SELECTORS.DROPDOWN_CONTAINER} .language-list::-webkit-scrollbar {
+			/* WebKit-based browsers (Chrome, Edge, Safari) for inner options */
+			#${SELECTORS.DROPDOWN_CONTAINER} .language-list .options::-webkit-scrollbar {
 				width: 8px;
 			}
-			#${SELECTORS.DROPDOWN_CONTAINER} .language-list::-webkit-scrollbar-track {
+			#${SELECTORS.DROPDOWN_CONTAINER} .language-list .options::-webkit-scrollbar-track {
 				background: transparent;
 			}
-			#${SELECTORS.DROPDOWN_CONTAINER} .language-list::-webkit-scrollbar-thumb {
+			#${SELECTORS.DROPDOWN_CONTAINER} .language-list .options::-webkit-scrollbar-thumb {
 				background-color: var(--tl-scrollbar-thumb, ${thumbColor});
 				border-radius: 8px;
 				border: 2px solid transparent;
 			}
-			#${SELECTORS.DROPDOWN_CONTAINER} .language-list::-webkit-scrollbar-thumb:hover {
+			#${SELECTORS.DROPDOWN_CONTAINER} .language-list .options::-webkit-scrollbar-thumb:hover {
 				background-color: var(--tl-scrollbar-thumb-hover, ${thumbHoverColor});
 			}
+
+            /* Inner scroll container that holds the language options */
+            #${SELECTORS.DROPDOWN_CONTAINER} .language-list .options {
+                overflow-y: auto;
+                padding: 0 0 10px 0; /* keep top padding on container */
+                flex: 1 1 auto; /* take available space and scroll */
+                /* Firefox scrollbar */
+                scrollbar-width: thin;
+                scrollbar-color: var(--tl-scrollbar-thumb, ${thumbColor}) transparent;
+            }
 
             #${SELECTORS.DROPDOWN_CONTAINER} .language-list .language-option {
                 padding: var(--tl-option-padding, 8px 12px);
@@ -1463,6 +1470,8 @@
         translatedDropdownLabels = {},
       } = this.options;
       this.languageList.innerHTML = "";
+      const optionsContainer = document.createElement("div");
+      optionsContainer.classList.add("options");
       if (this.options.isTranslating || this.options.disabled) {
         const statusOption = document.createElement("div");
         statusOption.classList.add("language-option", "translation-status");
@@ -1473,9 +1482,10 @@
         statusOption.style.cursor = "default";
         statusOption.style.opacity = "0.6";
         statusOption.style.pointerEvents = "none";
-        this.languageList.appendChild(statusOption);
+        optionsContainer.appendChild(statusOption);
         const poweredByLink2 = this.createPoweredByLink();
         if (poweredByLink2) {
+          this.languageList.appendChild(optionsContainer);
           this.languageList.appendChild(poweredByLink2);
         }
         return;
@@ -1503,7 +1513,6 @@
         });
       }
       allLanguages.forEach((l) => {
-        var _a;
         const option = document.createElement("div");
         option.classList.add("language-option");
         option.setAttribute("data-lang", l);
@@ -1516,17 +1525,20 @@
           option.classList.add("selected");
         }
         option.addEventListener("click", () => {
-          var _a2, _b;
-          (_b = (_a2 = this.options).onLanguageChange) == null
+          var _a, _b;
+          (_b = (_a = this.options).onLanguageChange) == null
             ? void 0
-            : _b.call(_a2, l);
+            : _b.call(_a, l);
           this.toggleLanguageList(new MouseEvent("click"));
         });
-        (_a = this.languageList) == null ? void 0 : _a.appendChild(option);
+        optionsContainer.appendChild(option);
       });
       const poweredByLink = this.createPoweredByLink();
       if (poweredByLink) {
+        this.languageList.appendChild(optionsContainer);
         this.languageList.appendChild(poweredByLink);
+      } else {
+        this.languageList.appendChild(optionsContainer);
       }
     }
     createPoweredByLink() {
