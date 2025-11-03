@@ -1214,6 +1214,8 @@
         theme === "light" ? "rgba(0,0,0,0.35)" : "rgba(255,255,255,0.35)";
       const thumbHoverColor =
         theme === "light" ? "rgba(0,0,0,0.55)" : "rgba(255,255,255,0.55)";
+      const trackColor =
+        theme === "light" ? "rgba(0,0,0,0.06)" : "rgba(255,255,255,0.12)";
       return `
             #${SELECTORS.DROPDOWN_CONTAINER} {
                 position: fixed;
@@ -1270,11 +1272,15 @@
                 background: var(--tl-bg, ${themeColors.bg});
                 border-radius: 8px;
                 box-shadow: var(--tl-box-shadow, ${themeColors.shadow});
-                padding-top: 10px;
+                padding-top: 0; /* move top padding into scroller so scrollbar reaches top */
                 position: fixed;
 				z-index: 2147483648; /* Ensure it's above other elements */
                 font-family: var(--tl-font-family, 'Inter', sans-serif);
                 overflow: hidden; /* only inner options scroll */
+                /* scrollbar variables for inner options */
+                --tl-scrollbar-thumb: ${thumbColor};
+                --tl-scrollbar-thumb-hover: ${thumbHoverColor};
+                --tl-scrollbar-track: ${trackColor};
             }
 
             #${SELECTORS.DROPDOWN_CONTAINER}.expanded .language-list {
@@ -1287,7 +1293,7 @@
 				width: 8px;
 			}
 			#${SELECTORS.DROPDOWN_CONTAINER} .language-list .options::-webkit-scrollbar-track {
-				background: transparent;
+				background: var(--tl-scrollbar-track, ${trackColor});
 			}
 			#${SELECTORS.DROPDOWN_CONTAINER} .language-list .options::-webkit-scrollbar-thumb {
 				background-color: var(--tl-scrollbar-thumb, ${thumbColor});
@@ -1301,11 +1307,12 @@
             /* Inner scroll container that holds the language options */
             #${SELECTORS.DROPDOWN_CONTAINER} .language-list .options {
                 overflow-y: auto;
-                padding: 0 0 10px 0; /* keep top padding on container */
+                padding: 10px 0 10px 0; /* add top padding inside scroller */
                 flex: 1 1 auto; /* take available space and scroll */
+                scrollbar-gutter: stable; /* keep scrollbar space visible */
                 /* Firefox scrollbar */
                 scrollbar-width: thin;
-                scrollbar-color: var(--tl-scrollbar-thumb, ${thumbColor}) transparent;
+                scrollbar-color: var(--tl-scrollbar-thumb, ${thumbColor}) var(--tl-scrollbar-track, ${trackColor});
             }
 
             #${SELECTORS.DROPDOWN_CONTAINER} .language-list .language-option {
