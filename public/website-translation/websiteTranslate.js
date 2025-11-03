@@ -1210,10 +1210,8 @@
     generateCSS(theme) {
       const baseColors = this.getBaseColors(theme);
       const themeColors = baseColors;
-      const thumbColor =
-        theme === "light" ? "rgba(0,0,0,0.35)" : "rgba(255,255,255,0.35)";
-      const thumbHoverColor =
-        theme === "light" ? "rgba(0,0,0,0.55)" : "rgba(255,255,255,0.55)";
+      const thumbColor = "rgba(255,255,255,0.35)";
+      const thumbHoverColor = "rgba(255,255,255,0.55)";
       return `
             #${SELECTORS.DROPDOWN_CONTAINER} {
                 position: fixed;
@@ -1271,13 +1269,13 @@
                 background: var(--tl-bg, ${themeColors.bg});
                 border-radius: 8px;
                 box-shadow: var(--tl-box-shadow, ${themeColors.shadow});
-                padding: 10px 0;
+                padding-top: 10px;
                 position: fixed;
 				z-index: 2147483648; /* Ensure it's above other elements */
                 font-family: var(--tl-font-family, 'Inter', sans-serif);
 				/* Modern scrollbar styling */
 				scrollbar-width: thin; /* Firefox */
-				scrollbar-color: var(--tl-scrollbar-thumb, ${thumbColor}) transparent; /* Firefox */
+				scrollbar-color: var(--tl-scrollbar-thumb, ${thumbColor});
 				--tl-scrollbar-thumb: ${thumbColor};
 				--tl-scrollbar-thumb-hover: ${thumbHoverColor};
             }
@@ -1365,7 +1363,7 @@
             #${SELECTORS.DROPDOWN_CONTAINER} .language-list .language-option.translation-status {
                 text-align: center;
                 font-style: italic;
-                padding: 12px;
+                padding-top: 12px;
 				color: var(--tl-color-muted, #888);
 				font-family: var(--tl-font-family, 'Inter', sans-serif);
             }
