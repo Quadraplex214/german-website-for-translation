@@ -1110,9 +1110,6 @@
               #${SELECTORS.DROPDOWN_CONTAINER} .language-options-scroll::-webkit-scrollbar {
                   width: 8px;
               }
-              #${SELECTORS.DROPDOWN_CONTAINER} .language-options-scroll::-webkit-scrollbar-track {
-                  background: transparent;
-              }
               #${SELECTORS.DROPDOWN_CONTAINER} .language-options-scroll::-webkit-scrollbar-thumb {
                   background-color: var(--tl-scrollbar-thumb, ${thumbColor});
                   border-radius: 8px;
