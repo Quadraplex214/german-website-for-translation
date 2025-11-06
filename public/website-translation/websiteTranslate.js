@@ -1118,16 +1118,62 @@
         const listHeight = this.languageList.offsetHeight;
         const viewportWidth = window.innerWidth;
         const viewportHeight = window.innerHeight;
+        const margin = 10;
         let left;
+        let top;
+        let fitsHorizontally = false;
         const screenHalf = viewportWidth / 2;
         if (buttonRect.left > screenHalf) {
-          left = buttonRect.left - listWidth - 10;
+          left = buttonRect.left - listWidth - margin;
+          if (left >= margin) {
+            fitsHorizontally = true;
+          } else {
+            left = buttonRect.right + margin;
+            if (left + listWidth + margin <= viewportWidth) {
+              fitsHorizontally = true;
+            }
+          }
         } else {
-          left = buttonRect.right + 10;
+          left = buttonRect.right + margin;
+          if (left + listWidth + margin <= viewportWidth) {
+            fitsHorizontally = true;
+          } else {
+            left = buttonRect.left - listWidth - margin;
+            if (left >= margin) {
+              fitsHorizontally = true;
+            }
+          }
         }
-        let top = buttonRect.top;
-        left = Math.max(10, Math.min(left, viewportWidth - listWidth - 10));
-        top = Math.max(10, Math.min(top, viewportHeight - listHeight - 10));
+        if (fitsHorizontally) {
+          top = buttonRect.top;
+          if (top + listHeight + margin > viewportHeight) {
+            top = Math.max(margin, viewportHeight - listHeight - margin);
+          }
+        } else {
+          top = buttonRect.top - listHeight - margin;
+          if (top >= margin) {
+            left = Math.max(
+              margin,
+              Math.min(
+                buttonRect.left - listWidth / 2 + buttonRect.width / 2,
+                viewportWidth - listWidth - margin
+              )
+            );
+          } else {
+            top = buttonRect.bottom + margin;
+            left = Math.max(
+              margin,
+              Math.min(
+                buttonRect.left - listWidth / 2 + buttonRect.width / 2,
+                viewportWidth - listWidth - margin
+              )
+            );
+          }
+        }
+        left = Math.max(
+          margin,
+          Math.min(left, viewportWidth - listWidth - margin)
+        );
         this.languageList.style.position = "fixed";
         this.languageList.style.left = `${left}px`;
         this.languageList.style.top = `${top}px`;
