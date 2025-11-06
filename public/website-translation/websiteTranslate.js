@@ -1001,6 +1001,7 @@
             x: rect.left,
             y: rect.top,
           });
+          this.anchorContainerToPixels(rect.left, rect.top);
         }
       };
       this.handleTouchStart = (e) => {
@@ -1082,6 +1083,7 @@
             x: rect.left,
             y: rect.top,
           });
+          this.anchorContainerToPixels(rect.left, rect.top);
         }
       };
       this.toggleLanguageList = (_e) => {
@@ -1188,9 +1190,22 @@
           margin,
           Math.min(left, viewportWidth - listWidth - margin)
         );
-        this.languageList.style.position = "fixed";
-        this.languageList.style.left = `${left}px`;
-        this.languageList.style.top = `${top}px`;
+        const containerRect = buttonRect;
+        let relLeft = left - containerRect.left;
+        let relTop = top - containerRect.top;
+        const clampedViewportLeft = Math.max(
+          margin,
+          Math.min(left, viewportWidth - listWidth - margin)
+        );
+        relLeft = clampedViewportLeft - containerRect.left;
+        const clampedViewportTop = Math.max(
+          margin,
+          Math.min(top, viewportHeight - listHeight - margin)
+        );
+        relTop = clampedViewportTop - containerRect.top;
+        this.languageList.style.position = "absolute";
+        this.languageList.style.left = `${relLeft}px`;
+        this.languageList.style.top = `${relTop}px`;
         this.languageList.style.minHeight = `${buttonRect.height}px`;
       };
     }
@@ -1248,6 +1263,13 @@
             </g>
         `;
       this.iconButton.appendChild(svgElement);
+    }
+    anchorContainerToPixels(x, y) {
+      if (!this.container) return;
+      this.container.style.left = `${x}px`;
+      this.container.style.top = `${y}px`;
+      this.container.style.right = "auto";
+      this.container.style.bottom = "auto";
     }
     update(newOptions) {
       this.options = { ...this.options, ...newOptions };
@@ -1339,7 +1361,7 @@
                 background: var(--tl-bg, ${themeColors.bg});
                 border-radius: 8px;
                 box-shadow: var(--tl-box-shadow, ${themeColors.shadow});
-                position: fixed;
+                position: absolute;
                 z-index: 2147483648;
                 font-family: var(--tl-font-family, 'Inter', sans-serif);
                 flex-direction: column;
@@ -1721,8 +1743,8 @@
       }
       document.body.appendChild(this.container);
       document.addEventListener("click", this.handleDocumentClick);
-      document.addEventListener("scroll", this.handleScroll, true);
-      window.addEventListener("scroll", this.handleScroll, true);
+      const rect = this.container.getBoundingClientRect();
+      this.anchorContainerToPixels(rect.left, rect.top);
     }
   }
   const queued = /* @__PURE__ */ new WeakSet();
