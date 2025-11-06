@@ -1319,7 +1319,6 @@
 				cursor: default;
                 font-family: var(--tl-font-family, 'Inter', sans-serif);
                 will-change: transform;
-                contain: layout style paint;
             }
 
             #${SELECTORS.DROPDOWN} {
