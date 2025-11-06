@@ -932,6 +932,8 @@
       this.dragStartY = 0;
       this.dragTimer = null;
       this.didDrag = false;
+      this.isScrolling = false;
+      this.scrollTimeout = null;
       this.handleMouseDown = (e) => {
         if (
           this.isExpanded ||
@@ -1111,8 +1113,20 @@
           this.closeLanguageList();
         }
       };
+      this.handleScroll = () => {
+        this.isScrolling = true;
+        if (this.scrollTimeout) {
+          clearTimeout(this.scrollTimeout);
+        }
+        this.scrollTimeout = window.setTimeout(() => {
+          this.isScrolling = false;
+          if (this.isExpanded) {
+            this.positionLanguageList();
+          }
+        }, 150);
+      };
       this.positionLanguageList = () => {
-        if (!this.container || !this.languageList) return;
+        if (!this.container || !this.languageList || this.isScrolling) return;
         const buttonRect = this.container.getBoundingClientRect();
         const listWidth = 200;
         const listHeight = this.languageList.offsetHeight;
@@ -1195,6 +1209,11 @@
       const style = document.getElementById(SELECTORS.DROPDOWN_STYLE);
       if (style) style.remove();
       document.removeEventListener("click", this.handleDocumentClick);
+      document.removeEventListener("scroll", this.handleScroll, true);
+      window.removeEventListener("scroll", this.handleScroll, true);
+      if (this.scrollTimeout) {
+        clearTimeout(this.scrollTimeout);
+      }
       this.container = null;
       this.iconButton = null;
       this.languageList = null;
@@ -1277,6 +1296,8 @@
                 transition: all 0.3s ease;
 				cursor: default;
                 font-family: var(--tl-font-family, 'Inter', sans-serif);
+                will-change: transform;
+                contain: layout style paint;
             }
 
             #${SELECTORS.DROPDOWN} {
@@ -1299,6 +1320,7 @@
                 font-family: var(--tl-font-family, 'Inter', sans-serif);
                 font-size: 12px;
                 font-weight: 500;
+                will-change: transform;
             }
 
             #${SELECTORS.DROPDOWN}:hover {
@@ -1699,6 +1721,8 @@
       }
       document.body.appendChild(this.container);
       document.addEventListener("click", this.handleDocumentClick);
+      document.addEventListener("scroll", this.handleScroll, true);
+      window.addEventListener("scroll", this.handleScroll, true);
     }
   }
   const queued = /* @__PURE__ */ new WeakSet();
