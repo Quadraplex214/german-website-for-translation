@@ -88,6 +88,21 @@
     const direction = isRtl(lang) ? "rtl" : "ltr";
     document.documentElement.dir = direction;
     document.documentElement.lang = lang;
+    if (document.body) {
+      document.body.dir = direction;
+      document.body.lang = lang;
+    } else {
+      document.addEventListener(
+        "DOMContentLoaded",
+        () => {
+          if (document.body) {
+            document.body.dir = direction;
+            document.body.lang = lang;
+          }
+        },
+        { once: true }
+      );
+    }
     const styleElementId = "translator-rtl-overrides";
     if (!document.getElementById(styleElementId)) {
       const style = document.createElement("style");
@@ -96,6 +111,21 @@
       const selectorList = Array.from(EXCLUDED_RTL_SELECTORS).join(", ");
       style.textContent = `${selectorList} { direction: ltr !important; unicode-bidi: isolate !important; }`;
       document.head.appendChild(style);
+    }
+    const bodyEnforcerId = "translator-body-direction-enforcer";
+    const existingEnforcer = document.getElementById(bodyEnforcerId);
+    if (direction === "ltr") {
+      if (!existingEnforcer) {
+        const style = document.createElement("style");
+        style.id = bodyEnforcerId;
+        style.type = "text/css";
+        style.textContent = `body { direction: ltr !important; }`;
+        document.head.appendChild(style);
+      } else {
+        existingEnforcer.textContent = `body { direction: ltr !important; }`;
+      }
+    } else if (existingEnforcer) {
+      existingEnforcer.remove();
     }
   }
   class ErrorHandler {
@@ -932,6 +962,8 @@
       this.dragStartY = 0;
       this.dragTimer = null;
       this.didDrag = false;
+      this.boundaryRoot = null;
+      this.resizeObserver = null;
       this.handleMouseDown = (e) => {
         if (
           this.isExpanded ||
@@ -970,9 +1002,12 @@
         }
         if (!this.isDragging || this.isExpanded) return;
         const rect = this.container.getBoundingClientRect();
-        const newX = e.clientX - this.dragStartX + rect.left;
-        const newY = e.clientY - this.dragStartY + rect.top;
-        const clamped = this.constrainToViewport(newX, newY);
+        const boundaryRect = this.getBoundaryRect();
+        const currentLeft = rect.left - boundaryRect.left;
+        const currentTop = rect.top - boundaryRect.top;
+        const newX = e.clientX - this.dragStartX + currentLeft;
+        const newY = e.clientY - this.dragStartY + currentTop;
+        const clamped = this.constrainToBoundary(newX, newY);
         this.container.style.left = `${clamped.x}px`;
         this.container.style.top = `${clamped.y}px`;
         this.container.style.right = "auto";
@@ -995,11 +1030,11 @@
           if (this.iconButton) this.iconButton.style.cursor = "pointer";
           this.container.style.transition = "";
           const rect = this.container.getBoundingClientRect();
+          const boundaryRect = this.getBoundaryRect();
           this.savePosition({
-            x: rect.left,
-            y: rect.top,
+            x: rect.left - boundaryRect.left,
+            y: rect.top - boundaryRect.top,
           });
-          this.anchorContainerToPixels(rect.left, rect.top);
         }
       };
       this.handleTouchStart = (e) => {
@@ -1048,9 +1083,12 @@
         }
         if (!this.isDragging || this.isExpanded) return;
         const rect = this.container.getBoundingClientRect();
-        const newX = touch.clientX - this.dragStartX + rect.left;
-        const newY = touch.clientY - this.dragStartY + rect.top;
-        const clamped = this.constrainToViewport(newX, newY);
+        const boundaryRect = this.getBoundaryRect();
+        const currentLeft = rect.left - boundaryRect.left;
+        const currentTop = rect.top - boundaryRect.top;
+        const newX = touch.clientX - this.dragStartX + currentLeft;
+        const newY = touch.clientY - this.dragStartY + currentTop;
+        const clamped = this.constrainToBoundary(newX, newY);
         this.container.style.left = `${clamped.x}px`;
         this.container.style.top = `${clamped.y}px`;
         this.container.style.right = "auto";
@@ -1077,11 +1115,11 @@
         this.container.style.transition = "";
         if (this.container) {
           const rect = this.container.getBoundingClientRect();
+          const boundaryRect = this.getBoundaryRect();
           this.savePosition({
-            x: rect.left,
-            y: rect.top,
+            x: rect.left - boundaryRect.left,
+            y: rect.top - boundaryRect.top,
           });
-          this.anchorContainerToPixels(rect.left, rect.top);
         }
       };
       this.toggleLanguageList = (_e) => {
@@ -1115,84 +1153,51 @@
       };
       this.positionLanguageList = () => {
         if (!this.container || !this.languageList) return;
+        const boundaryRect = this.getBoundaryRect();
         const buttonRect = this.container.getBoundingClientRect();
         const listWidth = 200;
-        const listHeight = this.languageList.offsetHeight;
-        const viewportWidth = window.innerWidth;
-        const viewportHeight = window.innerHeight;
         const margin = 10;
-        let left;
-        let top;
-        let fitsHorizontally = false;
-        const screenHalf = viewportWidth / 2;
-        if (buttonRect.left > screenHalf) {
-          left = buttonRect.left - listWidth - margin;
-          if (left >= margin) {
-            fitsHorizontally = true;
-          } else {
-            left = buttonRect.right + margin;
-            if (left + listWidth + margin <= viewportWidth) {
-              fitsHorizontally = true;
-            }
-          }
+        const boundaryCenterX = boundaryRect.left + boundaryRect.width / 2;
+        let leftRel;
+        if (buttonRect.left > boundaryCenterX) {
+          leftRel = buttonRect.left - boundaryRect.left - listWidth - margin;
         } else {
-          left = buttonRect.right + margin;
-          if (left + listWidth + margin <= viewportWidth) {
-            fitsHorizontally = true;
-          } else {
-            left = buttonRect.left - listWidth - margin;
-            if (left >= margin) {
-              fitsHorizontally = true;
-            }
-          }
+          leftRel = buttonRect.right - boundaryRect.left + margin;
         }
-        if (fitsHorizontally) {
-          top = buttonRect.top;
-          if (top + listHeight + margin > viewportHeight) {
-            top = Math.max(margin, viewportHeight - listHeight - margin);
-          }
+        leftRel = Math.max(
+          margin,
+          Math.min(leftRel, boundaryRect.width - listWidth - margin)
+        );
+        const availableBelow = boundaryRect.bottom - buttonRect.top - margin;
+        const availableAbove = buttonRect.bottom - boundaryRect.top - margin;
+        const maxUsable = Math.min(
+          300,
+          Math.max(availableBelow, availableAbove)
+        );
+        const openDown = availableBelow >= availableAbove;
+        let topRel;
+        if (openDown) {
+          topRel = buttonRect.top - boundaryRect.top;
         } else {
-          top = buttonRect.top - listHeight - margin;
-          if (top >= margin) {
-            left = Math.max(
-              margin,
-              Math.min(
-                buttonRect.left - listWidth / 2 + buttonRect.width / 2,
-                viewportWidth - listWidth - margin
-              )
-            );
-          } else {
-            top = buttonRect.bottom + margin;
-            left = Math.max(
-              margin,
-              Math.min(
-                buttonRect.left - listWidth / 2 + buttonRect.width / 2,
-                viewportWidth - listWidth - margin
-              )
-            );
-          }
+          topRel = Math.max(
+            margin,
+            buttonRect.bottom - boundaryRect.top - maxUsable
+          );
         }
-        left = Math.max(
-          margin,
-          Math.min(left, viewportWidth - listWidth - margin)
-        );
-        const containerRect = buttonRect;
-        let relLeft = left - containerRect.left;
-        let relTop = top - containerRect.top;
-        const clampedViewportLeft = Math.max(
-          margin,
-          Math.min(left, viewportWidth - listWidth - margin)
-        );
-        relLeft = clampedViewportLeft - containerRect.left;
-        const clampedViewportTop = Math.max(
-          margin,
-          Math.min(top, viewportHeight - listHeight - margin)
-        );
-        relTop = clampedViewportTop - containerRect.top;
         this.languageList.style.position = "absolute";
-        this.languageList.style.left = `${relLeft}px`;
-        this.languageList.style.top = `${relTop}px`;
+        this.languageList.style.left = `${leftRel}px`;
+        this.languageList.style.top = `${topRel}px`;
+        this.languageList.style.maxHeight = `${Math.max(
+          50,
+          Math.min(300, openDown ? availableBelow : availableAbove)
+        )}px`;
         this.languageList.style.minHeight = `${buttonRect.height}px`;
+      };
+      this.handleWindowResize = () => {
+        this.clampContainerPosition();
+        if (this.isExpanded) {
+          this.positionLanguageList();
+        }
       };
     }
     create() {
@@ -1210,9 +1215,15 @@
       const style = document.getElementById(SELECTORS.DROPDOWN_STYLE);
       if (style) style.remove();
       document.removeEventListener("click", this.handleDocumentClick);
+      window.removeEventListener("resize", this.handleWindowResize);
+      if (this.resizeObserver && this.boundaryRoot) {
+        this.resizeObserver.unobserve(this.boundaryRoot);
+      }
+      this.resizeObserver = null;
       this.container = null;
       this.iconButton = null;
       this.languageList = null;
+      this.boundaryRoot = null;
     }
     updateButtonLanguage() {
       if (!this.iconButton || !this.options.config) return;
@@ -1245,13 +1256,6 @@
         `;
       this.iconButton.appendChild(svgElement);
     }
-    anchorContainerToPixels(x, y) {
-      if (!this.container) return;
-      this.container.style.left = `${x}px`;
-      this.container.style.top = `${y}px`;
-      this.container.style.right = "auto";
-      this.container.style.bottom = "auto";
-    }
     update(newOptions) {
       this.options = { ...this.options, ...newOptions };
       this.updateButtonLanguage();
@@ -1278,17 +1282,11 @@
     generateCSS(theme) {
       const baseColors = this.getBaseColors(theme);
       const themeColors = baseColors;
-      const isDark = theme === "dark";
-      const thumbColor = isDark ? "rgba(255,255,255,0.35)" : "rgba(0,0,0,0.2)";
-      const thumbHoverColor = isDark
-        ? "rgba(255,255,255,0.55)"
-        : "rgba(0,0,0,0.35)";
-      const trackColor = themeColors.bg;
+      const thumbColor = "rgba(255,255,255,0.35)";
+      const thumbHoverColor = "rgba(255,255,255,0.55)";
       return `
             #${SELECTORS.DROPDOWN_CONTAINER} {
-                position: fixed;
-                bottom: 24px;
-                right: 24px;
+                position: absolute;
                 z-index: 2147483647;
                 width: 50px;
                 height: 50px;
@@ -1299,7 +1297,6 @@
                 transition: all 0.3s ease;
 				cursor: default;
                 font-family: var(--tl-font-family, 'Inter', sans-serif);
-                will-change: transform;
             }
 
             #${SELECTORS.DROPDOWN} {
@@ -1322,7 +1319,6 @@
                 font-family: var(--tl-font-family, 'Inter', sans-serif);
                 font-size: 12px;
                 font-weight: 500;
-                will-change: transform;
             }
 
             #${SELECTORS.DROPDOWN}:hover {
@@ -1354,10 +1350,9 @@
                 padding-top: 10px;
                 min-height: 50px;
                 scrollbar-width: thin;
-                scrollbar-color: var(--tl-scrollbar-thumb, ${thumbColor}) var(--tl-scrollbar-track, ${trackColor});
+                scrollbar-color: var(--tl-scrollbar-thumb, ${thumbColor});
                 --tl-scrollbar-thumb: ${thumbColor};
                 --tl-scrollbar-thumb-hover: ${thumbHoverColor};
-                --tl-scrollbar-track: ${trackColor};
             }
 
             #${SELECTORS.DROPDOWN_CONTAINER}.expanded .language-list {
@@ -1369,7 +1364,7 @@
 				width: 8px;
 			}
 			#${SELECTORS.DROPDOWN_CONTAINER} .language-options-scroll::-webkit-scrollbar-track {
-				background: var(--tl-scrollbar-track, ${trackColor});
+				background: transparent;
 			}
 			#${SELECTORS.DROPDOWN_CONTAINER} .language-options-scroll::-webkit-scrollbar-thumb {
 				background-color: var(--tl-scrollbar-thumb, ${thumbColor});
@@ -1498,37 +1493,25 @@
         .join(" ");
       return `${beforeParen} (${insideParen})`;
     }
-    constrainToViewport(x, y) {
+    constrainToBoundary(x, y) {
       if (!this.container) return { x, y };
       const dropdownWidth = this.container.offsetWidth;
       const dropdownHeight = this.container.offsetHeight;
-      const viewportWidth = window.innerWidth;
-      const viewportHeight = window.innerHeight;
+      const boundaryRect = this.getBoundaryRect();
       const minMargin = 24;
-      const maxX = viewportWidth - dropdownWidth - minMargin;
-      const maxY = viewportHeight - dropdownHeight - minMargin;
+      const maxX = boundaryRect.width - dropdownWidth - minMargin;
+      const maxY = boundaryRect.height - dropdownHeight - minMargin;
       return {
         x: Math.max(minMargin, Math.min(x, maxX)),
         y: Math.max(minMargin, Math.min(y, maxY)),
       };
     }
-    restorePosition() {
-      if (!this.container) return;
-      const position = this.loadPosition();
-      if (position) {
-        this.container.style.left = `${position.x}px`;
-        this.container.style.top = `${position.y}px`;
-        this.container.style.right = "auto";
-        this.container.style.bottom = "auto";
-      }
-    }
+    // (removed) restorePosition(): handled by initializePosition()
     // Local storage methods
     savePosition(position) {
       try {
-        localStorage.setItem(
-          "camb_dropdown_position",
-          JSON.stringify(position)
-        );
+        const payload = { ...position, rel: "boundary" };
+        localStorage.setItem("camb_dropdown_position", JSON.stringify(payload));
       } catch (error) {
         console.error("Failed to save dropdown position", error);
       }
@@ -1536,7 +1519,17 @@
     loadPosition() {
       try {
         const positionStr = localStorage.getItem("camb_dropdown_position");
-        return positionStr ? JSON.parse(positionStr) : null;
+        if (!positionStr) return null;
+        const parsed = JSON.parse(positionStr);
+        if (!parsed) return null;
+        const boundaryRect = this.getBoundaryRect();
+        if (!parsed.rel) {
+          return {
+            x: parsed.x - boundaryRect.left,
+            y: parsed.y - boundaryRect.top,
+          };
+        }
+        return { x: parsed.x, y: parsed.y };
       } catch (error) {
         console.error("Failed to load dropdown position", error);
         return null;
@@ -1632,11 +1625,60 @@
       poweredBy.appendChild(text);
       return poweredBy;
     }
+    getBoundaryRect() {
+      if (this.boundaryRoot) {
+        return this.boundaryRoot.getBoundingClientRect();
+      }
+      return document.body.getBoundingClientRect();
+    }
+    resolveBoundaryRoot() {
+      var _a;
+      const start =
+        ((_a = document.currentScript) == null ? void 0 : _a.parentElement) ||
+        document.body;
+      const isScrollable = (el) => {
+        const style = window.getComputedStyle(el);
+        const overflowY = style.overflowY;
+        const overflowX = style.overflowX;
+        const overflow = style.overflow;
+        const hasYScroll =
+          el.scrollHeight > el.clientHeight &&
+          (overflowY === "auto" || overflowY === "scroll");
+        const hasXScroll =
+          el.scrollWidth > el.clientWidth &&
+          (overflowX === "auto" || overflowX === "scroll");
+        const genericScroll =
+          (overflow === "auto" || overflow === "scroll") &&
+          (el.scrollHeight > el.clientHeight ||
+            el.scrollWidth > el.clientWidth);
+        return hasYScroll || hasXScroll || genericScroll;
+      };
+      let node = start;
+      while (node && node !== document.body && !isScrollable(node)) {
+        node = node.parentElement;
+      }
+      const boundary = node || document.body;
+      if (boundary !== document.body) {
+        const computed = window.getComputedStyle(boundary);
+        if (computed.position === "static") {
+          boundary.style.position = "relative";
+        }
+      }
+      return boundary;
+    }
+    clampContainerPosition() {
+      if (!this.container) return;
+      const left = parseFloat(this.container.style.left || "0");
+      const top = parseFloat(this.container.style.top || "0");
+      const clamped = this.constrainToBoundary(left, top);
+      this.container.style.left = `${clamped.x}px`;
+      this.container.style.top = `${clamped.y}px`;
+    }
     createContainer() {
       this.container = document.createElement("div");
       this.container.id = SELECTORS.DROPDOWN_CONTAINER;
       this.container.setAttribute("data-no-translate", "true");
-      this.container.style.position = "fixed";
+      this.container.style.position = "absolute";
       this.container.style.cursor = "default";
       this.container.style.transition = "none";
       this.iconButton = document.createElement("button");
@@ -1711,7 +1753,17 @@
       this.populateLanguageList();
       this.container.appendChild(iconWrapper);
       this.container.appendChild(this.languageList);
-      this.restorePosition();
+      this.boundaryRoot = this.resolveBoundaryRoot();
+      (this.boundaryRoot || document.body).appendChild(this.container);
+      this.initializePosition();
+      if ("ResizeObserver" in window && this.boundaryRoot) {
+        this.resizeObserver = new ResizeObserver(() => {
+          this.clampContainerPosition();
+          if (this.isExpanded) this.positionLanguageList();
+        });
+        this.resizeObserver.observe(this.boundaryRoot);
+      }
+      window.addEventListener("resize", this.handleWindowResize);
       if (this.options.isTranslating || this.options.disabled) {
         this.iconButton.disabled = true;
         this.iconButton.setAttribute(
@@ -1721,10 +1773,30 @@
             : "Translation service unavailable"
         );
       }
-      document.body.appendChild(this.container);
       document.addEventListener("click", this.handleDocumentClick);
-      const rect = this.container.getBoundingClientRect();
-      this.anchorContainerToPixels(rect.left, rect.top);
+    }
+    initializePosition() {
+      if (!this.container) return;
+      const restored = this.loadPosition();
+      if (restored) {
+        const clamped2 = this.constrainToBoundary(restored.x, restored.y);
+        this.container.style.left = `${clamped2.x}px`;
+        this.container.style.top = `${clamped2.y}px`;
+        this.container.style.right = "auto";
+        this.container.style.bottom = "auto";
+        return;
+      }
+      const boundaryRect = this.getBoundaryRect();
+      const minMargin = 24;
+      const width = this.container.offsetWidth || 50;
+      const height = this.container.offsetHeight || 50;
+      const left = Math.max(minMargin, boundaryRect.width - width - minMargin);
+      const top = Math.max(minMargin, boundaryRect.height - height - minMargin);
+      const clamped = this.constrainToBoundary(left, top);
+      this.container.style.left = `${clamped.x}px`;
+      this.container.style.top = `${clamped.y}px`;
+      this.container.style.right = "auto";
+      this.container.style.bottom = "auto";
     }
   }
   const queued = /* @__PURE__ */ new WeakSet();
