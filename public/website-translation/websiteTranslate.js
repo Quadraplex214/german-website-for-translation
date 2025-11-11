@@ -1342,7 +1342,7 @@
                 flex-direction: column;
                 align-items: center;
                 background: transparent;
-                transition: all 0.3s ease;
+                transition: transform 0.3s ease;
 				cursor: default;
                 font-family: var(--tl-font-family, 'Inter', sans-serif);
                 will-change: transform;
@@ -1766,6 +1766,20 @@
         );
       }
       document.body.appendChild(this.container);
+      try {
+        const margin = 24;
+        const rect = this.container.getBoundingClientRect();
+        const defaultX = Math.max(
+          margin,
+          window.innerWidth - rect.width - margin
+        );
+        const defaultY = Math.max(
+          margin,
+          window.innerHeight - rect.height - margin
+        );
+        this.anchorContainerToPixels(defaultX, defaultY);
+        this.isAnchored = true;
+      } catch {}
       this.restorePosition();
       document.addEventListener("click", this.handleDocumentClick);
       window.addEventListener("resize", this.handleResize);

@@ -19,10 +19,10 @@ export default function ThemeColorController() {
 
       if (currentScroll > lastScroll) {
         // Scrolling down → make transparent
-        meta.setAttribute("content", "#f5f5f5");
+        meta.setAttribute("content", "transparent");
       } else {
         // Scrolling up → opaque (for example, light gray)
-        meta.setAttribute("content", "transparent");
+        meta.setAttribute("content", "#f5f5f5");
       }
 
       lastScroll = currentScroll <= 0 ? 0 : currentScroll;
