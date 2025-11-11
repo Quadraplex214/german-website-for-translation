@@ -957,12 +957,15 @@
       this.iconButton = null;
       this.languageList = null;
       this.isExpanded = false;
+      this.prevViewportWidth = 0;
+      this.prevViewportHeight = 0;
       this.isDragging = false;
       this.dragStartX = 0;
       this.dragStartY = 0;
       this.dragTimer = null;
       this.didDrag = false;
       this.isAnchored = false;
+      this.usingBottomRightAnchor = true;
       this.handleMouseDown = (e) => {
         if (
           this.isExpanded ||
@@ -996,6 +999,7 @@
         ) {
           this.isDragging = true;
           this.didDrag = true;
+          this.convertToPixelAnchor();
           if (this.iconButton) this.iconButton.style.cursor = "move";
           this.container.style.transition = "none";
         }
@@ -1026,12 +1030,16 @@
           if (this.iconButton) this.iconButton.style.cursor = "pointer";
           this.container.style.transition = "";
           const rect = this.container.getBoundingClientRect();
+          const rightOffset = Math.max(24, window.innerWidth - rect.right);
+          const bottomOffset = Math.max(24, window.innerHeight - rect.bottom);
           this.savePosition({
-            x: rect.left,
-            y: rect.top,
+            anchor: "br",
+            x: rightOffset,
+            y: bottomOffset,
           });
-          this.anchorContainerToPixels(rect.left, rect.top);
+          this.anchorContainerToBottomRight(rightOffset, bottomOffset);
           this.isAnchored = true;
+          this.usingBottomRightAnchor = true;
         }
       };
       this.handleTouchStart = (e) => {
@@ -1075,6 +1083,7 @@
         ) {
           this.isDragging = true;
           this.didDrag = true;
+          this.convertToPixelAnchor();
           if (this.iconButton) this.iconButton.style.cursor = "move";
           this.container.style.transition = "none";
         }
@@ -1109,12 +1118,16 @@
         this.container.style.transition = "";
         if (this.container) {
           const rect = this.container.getBoundingClientRect();
+          const rightOffset = Math.max(24, window.innerWidth - rect.right);
+          const bottomOffset = Math.max(24, window.innerHeight - rect.bottom);
           this.savePosition({
-            x: rect.left,
-            y: rect.top,
+            anchor: "br",
+            x: rightOffset,
+            y: bottomOffset,
           });
-          this.anchorContainerToPixels(rect.left, rect.top);
+          this.anchorContainerToBottomRight(rightOffset, bottomOffset);
           this.isAnchored = true;
+          this.usingBottomRightAnchor = true;
         }
       };
       this.toggleLanguageList = (_e) => {
@@ -1148,11 +1161,33 @@
       };
       this.handleResize = () => {
         if (!this.container) return;
+        const currW = window.innerWidth;
+        const currH = window.innerHeight;
+        const widthChanged = Math.abs(currW - this.prevViewportWidth) > 1;
+        const heightDelta = Math.abs(currH - this.prevViewportHeight);
+        const smallHeightOnlyChange =
+          !widthChanged && heightDelta > 0 && heightDelta <= 120;
+        this.prevViewportWidth = currW;
+        this.prevViewportHeight = currH;
+        if (this.usingBottomRightAnchor) {
+          if (this.isExpanded) {
+            this.positionLanguageList();
+          }
+          return;
+        }
         if (this.isAnchored) {
           const rect = this.container.getBoundingClientRect();
-          const clamped = this.constrainToViewport(rect.left, rect.top);
-          this.anchorContainerToPixels(clamped.x, clamped.y);
-          this.savePosition(clamped);
+          const minMargin = 24;
+          const isOutside =
+            rect.left < minMargin ||
+            rect.top < minMargin ||
+            rect.right > currW - minMargin ||
+            rect.bottom > currH - minMargin;
+          if (widthChanged || isOutside || !smallHeightOnlyChange) {
+            const clamped = this.constrainToViewport(rect.left, rect.top);
+            this.anchorContainerToPixels(clamped.x, clamped.y);
+            this.savePosition({ x: clamped.x, y: clamped.y });
+          }
         }
         if (this.isExpanded) {
           this.positionLanguageList();
@@ -1298,6 +1333,23 @@
       this.container.style.right = "auto";
       this.container.style.bottom = "auto";
     }
+    anchorContainerToBottomRight(right, bottom) {
+      if (!this.container) return;
+      this.container.style.left = "auto";
+      this.container.style.top = "auto";
+      this.container.style.right = `calc(${right}px + env(safe-area-inset-right, 0px))`;
+      this.container.style.bottom = `calc(${bottom}px + env(safe-area-inset-bottom, 0px))`;
+    }
+    convertToPixelAnchor() {
+      if (!this.container) return;
+      if (!this.usingBottomRightAnchor) return;
+      try {
+        const rect = this.container.getBoundingClientRect();
+        this.anchorContainerToPixels(rect.left, rect.top);
+        this.isAnchored = true;
+        this.usingBottomRightAnchor = false;
+      } catch {}
+    }
     update(newOptions) {
       this.options = { ...this.options, ...newOptions };
       this.updateButtonLanguage();
@@ -1335,6 +1387,8 @@
                 position: fixed;
                 bottom: 24px;
                 right: 24px;
+                bottom: calc(24px + env(safe-area-inset-bottom, 0px));
+                right: calc(24px + env(safe-area-inset-right, 0px));
                 z-index: 2147483647;
                 width: 50px;
                 height: 50px;
@@ -1342,7 +1396,7 @@
                 flex-direction: column;
                 align-items: center;
                 background: transparent;
-                transition: transform 0.3s ease;
+                transition: none;
 				cursor: default;
                 font-family: var(--tl-font-family, 'Inter', sans-serif);
                 will-change: transform;
@@ -1359,7 +1413,7 @@
                 align-items: center;
                 justify-content: center;
 				cursor: pointer;
-                transition: all 0.3s ease;
+                transition: transform 0.3s ease;
                 color: var(--tl-color, ${themeColors.color});
                 position: absolute;
                 top: 0;
@@ -1562,10 +1616,27 @@
       if (!this.container) return;
       const position = this.loadPosition();
       if (!position) return;
-      const clamped = this.constrainToViewport(position.x, position.y);
-      this.anchorContainerToPixels(clamped.x, clamped.y);
-      this.isAnchored = true;
-      this.savePosition({ x: clamped.x, y: clamped.y });
+      if (position.anchor === "br") {
+        const right = Math.max(24, position.x ?? 24);
+        const bottom = Math.max(24, position.y ?? 24);
+        this.anchorContainerToBottomRight(right, bottom);
+        this.isAnchored = true;
+        this.usingBottomRightAnchor = true;
+        this.savePosition({ anchor: "br", x: right, y: bottom });
+        return;
+      }
+      try {
+        if (window.innerWidth <= 768) {
+          return;
+        }
+      } catch {}
+      if (typeof position.x === "number" && typeof position.y === "number") {
+        const clamped = this.constrainToViewport(position.x, position.y);
+        this.anchorContainerToPixels(clamped.x, clamped.y);
+        this.isAnchored = true;
+        this.usingBottomRightAnchor = false;
+        this.savePosition({ x: clamped.x, y: clamped.y });
+      }
     }
     // Local storage methods
     savePosition(position) {
@@ -1766,20 +1837,8 @@
         );
       }
       document.body.appendChild(this.container);
-      try {
-        const margin = 24;
-        const rect = this.container.getBoundingClientRect();
-        const defaultX = Math.max(
-          margin,
-          window.innerWidth - rect.width - margin
-        );
-        const defaultY = Math.max(
-          margin,
-          window.innerHeight - rect.height - margin
-        );
-        this.anchorContainerToPixels(defaultX, defaultY);
-        this.isAnchored = true;
-      } catch {}
+      this.prevViewportWidth = window.innerWidth;
+      this.prevViewportHeight = window.innerHeight;
       this.restorePosition();
       document.addEventListener("click", this.handleDocumentClick);
       window.addEventListener("resize", this.handleResize);
