@@ -1983,18 +1983,48 @@
                 ATTRIBUTES.TRANSLATED_TO
               );
               const currentLang = this.configManager.getCurrentLanguage();
+              let needsRetranslate = false;
               if (
                 translationState === "translated" ||
                 translatedTo === currentLang
               ) {
-                container.setAttribute(
-                  ATTRIBUTES.SOURCE_TEXT,
-                  container.textContent || ""
+                const currentText = (container.textContent || "").trim();
+                let storedTranslated = void 0;
+                const walker = document.createTreeWalker(
+                  container,
+                  NodeFilter.SHOW_TEXT
                 );
-                container.removeAttribute(ATTRIBUTES.TRANSLATION_STATE);
-                container.removeAttribute(ATTRIBUTES.TRANSLATED_TO);
+                let t;
+                while ((t = walker.nextNode())) {
+                  const stored = getTranslatedText(t);
+                  if (stored !== void 0) {
+                    storedTranslated = stored;
+                    break;
+                  }
+                }
+                if (storedTranslated !== void 0) {
+                  if (storedTranslated !== currentText) {
+                    needsRetranslate = true;
+                  }
+                } else {
+                  const originalSource = (
+                    container.getAttribute(ATTRIBUTES.SOURCE_TEXT) || ""
+                  ).trim();
+                  if (originalSource && currentText === originalSource) {
+                    needsRetranslate = true;
+                  }
+                }
+                if (needsRetranslate) {
+                  container.setAttribute(
+                    ATTRIBUTES.SOURCE_TEXT,
+                    container.textContent || ""
+                  );
+                  container.removeAttribute(ATTRIBUTES.TRANSLATION_STATE);
+                  container.removeAttribute(ATTRIBUTES.TRANSLATED_TO);
+                }
               }
               if (
+                needsRetranslate &&
                 this.isTranslatableElement(container) &&
                 !queued.has(container) &&
                 !translated.has(container)
@@ -2811,6 +2841,7 @@
         this.setTranslating(false);
         return;
       }
+      window.__isTranslatingDOM = true;
       const skeletonMap = /* @__PURE__ */ new Map();
       nodeMap.forEach((node, _key) => {
         const parentElement = node.parentElement;
@@ -2907,6 +2938,7 @@
         throw error;
       } finally {
         this.currentAbortController = null;
+        window.__isTranslatingDOM = false;
       }
     }
     applyTranslatedAttributes(translatedAttributes, attributeMap, targetLang) {
@@ -2966,6 +2998,7 @@
         });
         return;
       }
+      window.__isTranslatingDOM = true;
       const skeletonMap = /* @__PURE__ */ new Map();
       textMap.forEach((node, key) => {
         const skeleton = SkeletonManager.apply(node);
@@ -3023,6 +3056,8 @@
           element.removeAttribute(ATTRIBUTES.TRANSLATION_STATE);
         });
         skeletonMap.forEach((skeleton) => SkeletonManager.remove(skeleton));
+      } finally {
+        window.__isTranslatingDOM = false;
       }
     }
     async switchLanguage(newLang) {
