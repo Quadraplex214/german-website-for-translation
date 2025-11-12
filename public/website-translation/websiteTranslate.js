@@ -1917,39 +1917,9 @@
       this.observer = null;
     }
     processMutations(mutations) {
-      var _a, _b, _c;
+      var _a, _b;
       for (const mutation of mutations) {
         if (mutation.type === "childList") {
-          const targetEl = mutation.target;
-          if (targetEl && targetEl.nodeType === 1) {
-            const currentText =
-              ((_a = targetEl.textContent) == null ? void 0 : _a.trim()) || "";
-            const storedSource = (
-              targetEl.getAttribute(ATTRIBUTES.SOURCE_TEXT) || ""
-            ).trim();
-            const translationState = targetEl.getAttribute(
-              ATTRIBUTES.TRANSLATION_STATE
-            );
-            const translatedTo = targetEl.getAttribute(
-              ATTRIBUTES.TRANSLATED_TO
-            );
-            const currentLang = this.configManager.getCurrentLanguage();
-            if (
-              this.isTranslatableElement(targetEl) &&
-              currentText &&
-              storedSource &&
-              currentText !== storedSource &&
-              (translationState === "translated" ||
-                translatedTo === currentLang)
-            ) {
-              targetEl.setAttribute(ATTRIBUTES.SOURCE_TEXT, currentText);
-              targetEl.removeAttribute(ATTRIBUTES.TRANSLATION_STATE);
-              targetEl.removeAttribute(ATTRIBUTES.TRANSLATED_TO);
-              if (!queued.has(targetEl)) {
-                this.onContentChange(targetEl);
-              }
-            }
-          }
           if (
             mutation.addedNodes.length > 0 &&
             mutation.removedNodes.length === 1
@@ -1995,6 +1965,27 @@
               !translated.has(node)
             ) {
               this.onContentChange(node);
+            } else if (node.nodeType === 3) {
+              const parent = node.parentElement;
+              if (parent && this.shouldRetranslateTextChange(parent, node)) {
+                const newText = node.data || "";
+                parent.setAttribute(ATTRIBUTES.SOURCE_TEXT, newText);
+                clearTranslatedText(node);
+                translated.delete(node);
+                translated.delete(parent);
+                parent.removeAttribute(ATTRIBUTES.TRANSLATION_STATE);
+                parent.removeAttribute(ATTRIBUTES.TRANSLATED_TO);
+                if (!queued.has(parent)) {
+                  this.onContentChange(parent);
+                }
+              } else if (
+                parent &&
+                this.isTranslatableElement(parent) &&
+                !queued.has(parent) &&
+                !translated.has(parent)
+              ) {
+                this.onContentChange(parent);
+              }
             }
           });
         } else if (mutation.type === "characterData") {
@@ -2012,8 +2003,8 @@
           ) {
             const stored = getTranslatedText(textNode);
             const current =
-              ((_b = mutation.target.data) == null ? void 0 : _b.trim()) || "";
-            if (stored === void 0 || stored !== current) {
+              ((_a = mutation.target.data) == null ? void 0 : _a.trim()) || "";
+            if (stored !== void 0 && stored !== current) {
               parent.setAttribute(
                 ATTRIBUTES.SOURCE_TEXT,
                 mutation.target.data || ""
@@ -2050,9 +2041,9 @@
           ) {
             const storedAttr = getTranslatedAttribute(element, attrName);
             const currentVal =
-              ((_c = element.getAttribute(attrName)) == null
+              ((_b = element.getAttribute(attrName)) == null
                 ? void 0
-                : _c.trim()) || "";
+                : _b.trim()) || "";
             if (storedAttr !== void 0 && storedAttr !== currentVal) {
               const sourceAttributeName = `${ATTRIBUTES.SOURCE_ATTRIBUTE_PREFIX}${attrName}`;
               element.setAttribute(
@@ -2079,6 +2070,23 @@
           }
         }
       }
+    }
+    shouldRetranslateTextChange(parent, textNode) {
+      var _a;
+      const translationState = parent.getAttribute(
+        ATTRIBUTES.TRANSLATION_STATE
+      );
+      const translatedTo = parent.getAttribute(ATTRIBUTES.TRANSLATED_TO);
+      const currentLang = this.configManager.getCurrentLanguage();
+      if (translationState === "translated" || translatedTo === currentLang) {
+        const stored = getTranslatedText(textNode);
+        const current =
+          ((_a = textNode.data) == null ? void 0 : _a.trim()) || "";
+        if (stored !== void 0 && stored !== current) {
+          return true;
+        }
+      }
+      return false;
     }
     isTranslatableElement(node) {
       if (node.nodeType !== 1) return false;
@@ -2194,13 +2202,6 @@
         if (targetLanguage && parent) {
           const translatedTo = parent.getAttribute(ATTRIBUTES.TRANSLATED_TO);
           if (translatedTo === targetLanguage) {
-            const currentText = (text == null ? void 0 : text.trim()) || "";
-            const storedSource = (
-              parent.getAttribute(ATTRIBUTES.SOURCE_TEXT) || ""
-            ).trim();
-            if (currentText && storedSource && currentText !== storedSource) {
-              return NodeFilter.FILTER_ACCEPT;
-            }
             return NodeFilter.FILTER_REJECT;
           }
         }
@@ -2236,28 +2237,16 @@
           if (DomUtils.isNonContentElement(element)) {
             return;
           }
+          if (
+            targetLanguage &&
+            element.getAttribute(ATTRIBUTES.TRANSLATED_TO) === targetLanguage
+          ) {
+            return;
+          }
           TRANSLATABLE_ATTRIBUTES.forEach((attr) => {
             const value = element.getAttribute(attr);
             if (value && value.trim()) {
               const sourceAttribute = `${ATTRIBUTES.SOURCE_ATTRIBUTE_PREFIX}${attr}`;
-              if (
-                targetLanguage &&
-                element.getAttribute(ATTRIBUTES.TRANSLATED_TO) ===
-                  targetLanguage
-              ) {
-                const stored = (
-                  element.getAttribute(sourceAttribute) || ""
-                ).trim();
-                if (stored && stored !== value.trim()) {
-                  attributeTexts.push(stored);
-                  attributeMap.set(attributeIndex, {
-                    element,
-                    attribute: attr,
-                  });
-                  attributeIndex++;
-                }
-                return;
-              }
               if (element.hasAttribute(sourceAttribute)) {
                 attributeTexts.push(element.getAttribute(sourceAttribute));
               } else {
