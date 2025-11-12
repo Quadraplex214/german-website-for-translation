@@ -1713,7 +1713,7 @@
       this.observer = null;
     }
     processMutations(mutations) {
-      var _a, _b;
+      var _a, _b, _c, _d, _e;
       for (const mutation of mutations) {
         if (mutation.type === "childList") {
           if (
@@ -1793,35 +1793,25 @@
                   Array.from(mutation.removedNodes).some(
                     (n) => n.nodeType === Node.TEXT_NODE
                   );
-                const currentText = (container.textContent || "").trim();
-                let storedTranslated = void 0;
-                const walker = document.createTreeWalker(
-                  container,
-                  NodeFilter.SHOW_TEXT
-                );
-                let t;
-                while ((t = walker.nextNode())) {
-                  const stored = getTranslatedText(t);
-                  if (stored !== void 0) {
-                    storedTranslated = stored;
-                    break;
-                  }
-                }
-                if (storedTranslated !== void 0) {
-                  if (storedTranslated !== currentText) {
-                    needsRetranslate = true;
-                  }
-                } else if (textNodeReplaced) {
+                if (textNodeReplaced) {
                   needsRetranslate = true;
                 }
                 if (needsRetranslate) {
                   if (!isEngineMutating) {
-                    container.setAttribute(
-                      ATTRIBUTES.SOURCE_TEXT,
-                      container.textContent || ""
-                    );
-                    container.removeAttribute(ATTRIBUTES.TRANSLATION_STATE);
-                    container.removeAttribute(ATTRIBUTES.TRANSLATED_TO);
+                    const defaultLang =
+                      (_a = this.configManager.getTranslationConfig()) == null
+                        ? void 0
+                        : _a.defaultLang;
+                    const currentLang2 =
+                      this.configManager.getCurrentLanguage();
+                    if (currentLang2 === defaultLang) {
+                      container.setAttribute(
+                        ATTRIBUTES.SOURCE_TEXT,
+                        container.textContent || ""
+                      );
+                      container.removeAttribute(ATTRIBUTES.TRANSLATION_STATE);
+                      container.removeAttribute(ATTRIBUTES.TRANSLATED_TO);
+                    }
                   }
                 }
               }
@@ -1851,17 +1841,23 @@
           ) {
             const stored = getTranslatedText(textNode);
             const current =
-              ((_a = mutation.target.data) == null ? void 0 : _a.trim()) || "";
+              ((_b = mutation.target.data) == null ? void 0 : _b.trim()) || "";
             if (stored !== void 0 && stored !== current) {
               if (!isEngineMutating) {
-                parent.setAttribute(
-                  ATTRIBUTES.SOURCE_TEXT,
-                  mutation.target.data || ""
-                );
-                clearTranslatedText(textNode);
-                translated.delete(textNode);
-                parent.removeAttribute(ATTRIBUTES.TRANSLATION_STATE);
-                parent.removeAttribute(ATTRIBUTES.TRANSLATED_TO);
+                const defaultLang =
+                  (_c = this.configManager.getTranslationConfig()) == null
+                    ? void 0
+                    : _c.defaultLang;
+                if (currentLang === defaultLang) {
+                  parent.setAttribute(
+                    ATTRIBUTES.SOURCE_TEXT,
+                    mutation.target.data || ""
+                  );
+                  clearTranslatedText(textNode);
+                  translated.delete(textNode);
+                  parent.removeAttribute(ATTRIBUTES.TRANSLATION_STATE);
+                  parent.removeAttribute(ATTRIBUTES.TRANSLATED_TO);
+                }
               }
               if (!queued.has(parent)) {
                 this.onContentChange(parent);
@@ -1892,20 +1888,26 @@
           ) {
             const storedAttr = getTranslatedAttribute(element, attrName);
             const currentVal =
-              ((_b = element.getAttribute(attrName)) == null
+              ((_d = element.getAttribute(attrName)) == null
                 ? void 0
-                : _b.trim()) || "";
+                : _d.trim()) || "";
             if (storedAttr !== void 0 && storedAttr !== currentVal) {
               if (!isEngineMutating) {
-                const sourceAttributeName = `${ATTRIBUTES.SOURCE_ATTRIBUTE_PREFIX}${attrName}`;
-                element.setAttribute(
-                  sourceAttributeName,
-                  element.getAttribute(attrName) || ""
-                );
-                clearTranslatedAttribute(element, attrName);
-                translated.delete(element);
-                element.removeAttribute(ATTRIBUTES.TRANSLATION_STATE);
-                element.removeAttribute(ATTRIBUTES.TRANSLATED_TO);
+                const defaultLang =
+                  (_e = this.configManager.getTranslationConfig()) == null
+                    ? void 0
+                    : _e.defaultLang;
+                if (currentLang === defaultLang) {
+                  const sourceAttributeName = `${ATTRIBUTES.SOURCE_ATTRIBUTE_PREFIX}${attrName}`;
+                  element.setAttribute(
+                    sourceAttributeName,
+                    element.getAttribute(attrName) || ""
+                  );
+                  clearTranslatedAttribute(element, attrName);
+                  translated.delete(element);
+                  element.removeAttribute(ATTRIBUTES.TRANSLATION_STATE);
+                  element.removeAttribute(ATTRIBUTES.TRANSLATED_TO);
+                }
               }
               if (!queued.has(element)) {
                 this.onContentChange(element);
@@ -1970,10 +1972,6 @@
       if (element.matches(DROPDOWN_EXCLUDED_SELECTORS.join(", "))) return false;
       if (DomUtils.shouldPreventTranslation(element)) return false;
       if (DomUtils.isNonContentElement(element)) return false;
-      const currentLang = this.configManager.getCurrentLanguage();
-      if (element.getAttribute(ATTRIBUTES.TRANSLATED_TO) === currentLang) {
-        element.removeAttribute(ATTRIBUTES.TRANSLATED_TO);
-      }
       return true;
     }
     observeOpenShadowRoots(root, options) {
@@ -3012,7 +3010,6 @@
         `;
       document.head.appendChild(style);
       this.updateLanguageDropdown();
-      this.startObserver();
       try {
         const apiConfig = this.configManager.getApiConfig();
         if (apiConfig) {
@@ -3046,6 +3043,7 @@
         }
       }
       applyDirection(this.configManager.getCurrentLanguage());
+      this.startObserver();
       this.navigationService.start();
       window.addEventListener("offline", () => {
         ErrorHandler.showErrorMessage(
