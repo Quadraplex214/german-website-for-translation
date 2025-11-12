@@ -81,7 +81,7 @@ export default function GermanHeroFood() {
     setIsTranslating(true);
     try {
       // Simulate async translation work
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+      await new Promise((resolve) => setTimeout(resolve, 3000));
     } finally {
       setIsTranslating(false);
     }
