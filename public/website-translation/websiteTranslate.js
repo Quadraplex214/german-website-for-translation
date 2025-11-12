@@ -2164,6 +2164,13 @@
         if (targetLanguage && parent) {
           const translatedTo = parent.getAttribute(ATTRIBUTES.TRANSLATED_TO);
           if (translatedTo === targetLanguage) {
+            const currentText = (text == null ? void 0 : text.trim()) || "";
+            const storedSource = (
+              parent.getAttribute(ATTRIBUTES.SOURCE_TEXT) || ""
+            ).trim();
+            if (currentText && storedSource && currentText !== storedSource) {
+              return NodeFilter.FILTER_ACCEPT;
+            }
             return NodeFilter.FILTER_REJECT;
           }
         }
@@ -2199,16 +2206,28 @@
           if (DomUtils.isNonContentElement(element)) {
             return;
           }
-          if (
-            targetLanguage &&
-            element.getAttribute(ATTRIBUTES.TRANSLATED_TO) === targetLanguage
-          ) {
-            return;
-          }
           TRANSLATABLE_ATTRIBUTES.forEach((attr) => {
             const value = element.getAttribute(attr);
             if (value && value.trim()) {
               const sourceAttribute = `${ATTRIBUTES.SOURCE_ATTRIBUTE_PREFIX}${attr}`;
+              if (
+                targetLanguage &&
+                element.getAttribute(ATTRIBUTES.TRANSLATED_TO) ===
+                  targetLanguage
+              ) {
+                const stored = (
+                  element.getAttribute(sourceAttribute) || ""
+                ).trim();
+                if (stored && stored !== value.trim()) {
+                  attributeTexts.push(stored);
+                  attributeMap.set(attributeIndex, {
+                    element,
+                    attribute: attr,
+                  });
+                  attributeIndex++;
+                }
+                return;
+              }
               if (element.hasAttribute(sourceAttribute)) {
                 attributeTexts.push(element.getAttribute(sourceAttribute));
               } else {
