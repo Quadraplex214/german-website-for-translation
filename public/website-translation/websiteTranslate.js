@@ -1773,6 +1773,7 @@
                 ? mutation.target
                 : mutation.target.parentElement;
             if (container) {
+              const isEngineMutating = window.__isTranslatingDOM;
               const translationState = container.getAttribute(
                 ATTRIBUTES.TRANSLATION_STATE
               );
@@ -1814,12 +1815,14 @@
                   needsRetranslate = true;
                 }
                 if (needsRetranslate) {
-                  container.setAttribute(
-                    ATTRIBUTES.SOURCE_TEXT,
-                    container.textContent || ""
-                  );
-                  container.removeAttribute(ATTRIBUTES.TRANSLATION_STATE);
-                  container.removeAttribute(ATTRIBUTES.TRANSLATED_TO);
+                  if (!isEngineMutating) {
+                    container.setAttribute(
+                      ATTRIBUTES.SOURCE_TEXT,
+                      container.textContent || ""
+                    );
+                    container.removeAttribute(ATTRIBUTES.TRANSLATION_STATE);
+                    container.removeAttribute(ATTRIBUTES.TRANSLATED_TO);
+                  }
                 }
               }
               if (
@@ -1836,6 +1839,7 @@
           const textNode = mutation.target;
           const parent = mutation.target.parentElement;
           if (!parent) continue;
+          const isEngineMutating = window.__isTranslatingDOM;
           const translationState = parent.getAttribute(
             ATTRIBUTES.TRANSLATION_STATE
           );
@@ -1849,14 +1853,16 @@
             const current =
               ((_a = mutation.target.data) == null ? void 0 : _a.trim()) || "";
             if (stored !== void 0 && stored !== current) {
-              parent.setAttribute(
-                ATTRIBUTES.SOURCE_TEXT,
-                mutation.target.data || ""
-              );
-              clearTranslatedText(textNode);
-              translated.delete(textNode);
-              parent.removeAttribute(ATTRIBUTES.TRANSLATION_STATE);
-              parent.removeAttribute(ATTRIBUTES.TRANSLATED_TO);
+              if (!isEngineMutating) {
+                parent.setAttribute(
+                  ATTRIBUTES.SOURCE_TEXT,
+                  mutation.target.data || ""
+                );
+                clearTranslatedText(textNode);
+                translated.delete(textNode);
+                parent.removeAttribute(ATTRIBUTES.TRANSLATION_STATE);
+                parent.removeAttribute(ATTRIBUTES.TRANSLATED_TO);
+              }
               if (!queued.has(parent)) {
                 this.onContentChange(parent);
               }
@@ -1873,6 +1879,7 @@
         } else if (mutation.type === "attributes") {
           const element = mutation.target;
           const attrName = mutation.attributeName || "";
+          const isEngineMutating = window.__isTranslatingDOM;
           const translationState = element.getAttribute(
             ATTRIBUTES.TRANSLATION_STATE
           );
@@ -1889,15 +1896,17 @@
                 ? void 0
                 : _b.trim()) || "";
             if (storedAttr !== void 0 && storedAttr !== currentVal) {
-              const sourceAttributeName = `${ATTRIBUTES.SOURCE_ATTRIBUTE_PREFIX}${attrName}`;
-              element.setAttribute(
-                sourceAttributeName,
-                element.getAttribute(attrName) || ""
-              );
-              clearTranslatedAttribute(element, attrName);
-              translated.delete(element);
-              element.removeAttribute(ATTRIBUTES.TRANSLATION_STATE);
-              element.removeAttribute(ATTRIBUTES.TRANSLATED_TO);
+              if (!isEngineMutating) {
+                const sourceAttributeName = `${ATTRIBUTES.SOURCE_ATTRIBUTE_PREFIX}${attrName}`;
+                element.setAttribute(
+                  sourceAttributeName,
+                  element.getAttribute(attrName) || ""
+                );
+                clearTranslatedAttribute(element, attrName);
+                translated.delete(element);
+                element.removeAttribute(ATTRIBUTES.TRANSLATION_STATE);
+                element.removeAttribute(ATTRIBUTES.TRANSLATED_TO);
+              }
               if (!queued.has(element)) {
                 this.onContentChange(element);
               }
