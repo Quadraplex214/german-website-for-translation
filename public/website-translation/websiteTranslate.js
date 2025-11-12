@@ -1917,9 +1917,39 @@
       this.observer = null;
     }
     processMutations(mutations) {
-      var _a, _b;
+      var _a, _b, _c;
       for (const mutation of mutations) {
         if (mutation.type === "childList") {
+          const targetEl = mutation.target;
+          if (targetEl && targetEl.nodeType === 1) {
+            const currentText =
+              ((_a = targetEl.textContent) == null ? void 0 : _a.trim()) || "";
+            const storedSource = (
+              targetEl.getAttribute(ATTRIBUTES.SOURCE_TEXT) || ""
+            ).trim();
+            const translationState = targetEl.getAttribute(
+              ATTRIBUTES.TRANSLATION_STATE
+            );
+            const translatedTo = targetEl.getAttribute(
+              ATTRIBUTES.TRANSLATED_TO
+            );
+            const currentLang = this.configManager.getCurrentLanguage();
+            if (
+              this.isTranslatableElement(targetEl) &&
+              currentText &&
+              storedSource &&
+              currentText !== storedSource &&
+              (translationState === "translated" ||
+                translatedTo === currentLang)
+            ) {
+              targetEl.setAttribute(ATTRIBUTES.SOURCE_TEXT, currentText);
+              targetEl.removeAttribute(ATTRIBUTES.TRANSLATION_STATE);
+              targetEl.removeAttribute(ATTRIBUTES.TRANSLATED_TO);
+              if (!queued.has(targetEl)) {
+                this.onContentChange(targetEl);
+              }
+            }
+          }
           if (
             mutation.addedNodes.length > 0 &&
             mutation.removedNodes.length === 1
@@ -1982,7 +2012,7 @@
           ) {
             const stored = getTranslatedText(textNode);
             const current =
-              ((_a = mutation.target.data) == null ? void 0 : _a.trim()) || "";
+              ((_b = mutation.target.data) == null ? void 0 : _b.trim()) || "";
             if (stored === void 0 || stored !== current) {
               parent.setAttribute(
                 ATTRIBUTES.SOURCE_TEXT,
@@ -2020,9 +2050,9 @@
           ) {
             const storedAttr = getTranslatedAttribute(element, attrName);
             const currentVal =
-              ((_b = element.getAttribute(attrName)) == null
+              ((_c = element.getAttribute(attrName)) == null
                 ? void 0
-                : _b.trim()) || "";
+                : _c.trim()) || "";
             if (storedAttr !== void 0 && storedAttr !== currentVal) {
               const sourceAttributeName = `${ATTRIBUTES.SOURCE_ATTRIBUTE_PREFIX}${attrName}`;
               element.setAttribute(
