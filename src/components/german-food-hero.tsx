@@ -161,6 +161,8 @@ export default function GermanHeroFood() {
                   wurden. Von herzhaftem Sauerbraten bis zu knusprigem Schnitzel
                   - entdecken Sie das reiche kulinarische Erbe Deutschlands
                 </motion.p>
+
+                <p>CAMB.AI is the gold standard in <strong>AI-powered Localization</strong>, translating every language (150+), every nuance, every emotion, in real time.</p>
               </div>
 
               <motion.div

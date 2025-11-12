@@ -2074,12 +2074,7 @@
         });
         let node;
         while ((node = walker.nextNode())) {
-          const parent = node.parentElement;
-          if (parent && parent.hasAttribute(ATTRIBUTES.SOURCE_TEXT)) {
-            textNodes.push(parent.getAttribute(ATTRIBUTES.SOURCE_TEXT));
-          } else {
-            textNodes.push(node.textContent);
-          }
+          textNodes.push(node.textContent);
           nodeMap.set(textIndex, node);
           textIndex++;
         }
@@ -2590,8 +2585,7 @@
         const originalNode = nodeMap.get(index);
         if (!originalNode || !originalNode.parentElement) return;
         const parentElement = originalNode.parentElement;
-        const originalText =
-          parentElement.getAttribute(ATTRIBUTES.SOURCE_TEXT) || "";
+        const originalText = originalNode.textContent || "";
         if (!parentElement.hasAttribute(ATTRIBUTES.SOURCE_TEXT)) {
           parentElement.setAttribute(
             ATTRIBUTES.SOURCE_TEXT,
@@ -2600,11 +2594,10 @@
         }
         parentElement.setAttribute(ATTRIBUTES.TRANSLATION_STATE, "translated");
         parentElement.setAttribute(ATTRIBUTES.TRANSLATED_TO, targetLang);
-        const currentSourceText =
-          parentElement.getAttribute(ATTRIBUTES.SOURCE_TEXT) || "";
         const trimmedTranslated = translatedText.trim();
         setTranslatedText(originalNode, trimmedTranslated);
-        if (currentSourceText.trim() !== trimmedTranslated) {
+        const currentNodeText = (originalNode.textContent || "").trim();
+        if (currentNodeText !== trimmedTranslated) {
           const leadingWs =
             ((_a = originalText.match(/^\s+/)) == null ? void 0 : _a[0]) || "";
           const trailingWs =
