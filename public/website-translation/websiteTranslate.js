@@ -1983,7 +1983,7 @@
             const stored = getTranslatedText(textNode);
             const current =
               ((_a = mutation.target.data) == null ? void 0 : _a.trim()) || "";
-            if (stored !== void 0 && stored !== current) {
+            if (stored === void 0 || stored !== current) {
               parent.setAttribute(
                 ATTRIBUTES.SOURCE_TEXT,
                 mutation.target.data || ""
