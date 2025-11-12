@@ -1683,18 +1683,14 @@
       this.stop();
       this.currentUrl = DomUtils.getCurrentPath();
       this.observer = new MutationObserver((mutations) => {
-        const effectiveMutations = window.__isTranslatingDOM
-          ? mutations.filter((m) => !this.isSkeletonOnlyMutation(m))
-          : mutations;
+        if (window.__isTranslatingDOM) return;
         const newUrl = DomUtils.getCurrentPath();
         if (newUrl !== this.currentUrl) {
           this.currentUrl = newUrl;
           this.onUrlChange(newUrl);
           return;
         }
-        if (effectiveMutations.length > 0) {
-          this.processMutations(effectiveMutations);
-        }
+        this.processMutations(mutations);
       });
       const observeOptions = {
         childList: true,
@@ -1713,7 +1709,7 @@
       this.observer = null;
     }
     processMutations(mutations) {
-      var _a, _b, _c, _d, _e;
+      var _a, _b;
       for (const mutation of mutations) {
         if (mutation.type === "childList") {
           if (
@@ -1755,7 +1751,6 @@
             }
           }
           mutation.addedNodes.forEach((node) => {
-            if (this.isSkeletonNode(node)) return;
             if (
               this.isTranslatableElement(node) &&
               !queued.has(node) &&
@@ -1773,7 +1768,6 @@
                 ? mutation.target
                 : mutation.target.parentElement;
             if (container) {
-              const isEngineMutating = window.__isTranslatingDOM;
               const translationState = container.getAttribute(
                 ATTRIBUTES.TRANSLATION_STATE
               );
@@ -1786,36 +1780,47 @@
                 translationState === "translated" ||
                 translatedTo === currentLang
               ) {
-                const textNodeReplaced =
-                  Array.from(mutation.addedNodes).some(
-                    (n) => n.nodeType === Node.TEXT_NODE
-                  ) ||
-                  Array.from(mutation.removedNodes).some(
-                    (n) => n.nodeType === Node.TEXT_NODE
-                  );
-                if (textNodeReplaced) {
-                  needsRetranslate = true;
-                }
-                if (needsRetranslate) {
-                  if (!isEngineMutating) {
-                    const defaultLang =
-                      (_a = this.configManager.getTranslationConfig()) == null
-                        ? void 0
-                        : _a.defaultLang;
-                    const currentLang2 =
-                      this.configManager.getCurrentLanguage();
-                    if (currentLang2 === defaultLang) {
-                      container.setAttribute(
-                        ATTRIBUTES.SOURCE_TEXT,
-                        container.textContent || ""
-                      );
-                      container.removeAttribute(ATTRIBUTES.TRANSLATION_STATE);
-                      container.removeAttribute(ATTRIBUTES.TRANSLATED_TO);
-                    }
+                const currentText = (container.textContent || "").trim();
+                let storedTranslated = void 0;
+                const walker = document.createTreeWalker(
+                  container,
+                  NodeFilter.SHOW_TEXT
+                );
+                let t;
+                while ((t = walker.nextNode())) {
+                  const stored = getTranslatedText(t);
+                  if (stored !== void 0) {
+                    storedTranslated = stored;
+                    break;
                   }
                 }
+                if (storedTranslated !== void 0) {
+                  if (storedTranslated !== currentText) {
+                    needsRetranslate = true;
+                  }
+                } else {
+                  const originalSource = (
+                    container.getAttribute(ATTRIBUTES.SOURCE_TEXT) || ""
+                  ).trim();
+                  if (originalSource && currentText === originalSource) {
+                    needsRetranslate = true;
+                  }
+                }
+                if (needsRetranslate) {
+                  container.setAttribute(
+                    ATTRIBUTES.SOURCE_TEXT,
+                    container.textContent || ""
+                  );
+                  container.removeAttribute(ATTRIBUTES.TRANSLATION_STATE);
+                  container.removeAttribute(ATTRIBUTES.TRANSLATED_TO);
+                }
               }
-              if (needsRetranslate && !queued.has(container)) {
+              if (
+                needsRetranslate &&
+                this.isTranslatableElement(container) &&
+                !queued.has(container) &&
+                !translated.has(container)
+              ) {
                 this.onContentChange(container);
               }
             }
@@ -1824,7 +1829,6 @@
           const textNode = mutation.target;
           const parent = mutation.target.parentElement;
           if (!parent) continue;
-          const isEngineMutating = window.__isTranslatingDOM;
           const translationState = parent.getAttribute(
             ATTRIBUTES.TRANSLATION_STATE
           );
@@ -1836,24 +1840,16 @@
           ) {
             const stored = getTranslatedText(textNode);
             const current =
-              ((_b = mutation.target.data) == null ? void 0 : _b.trim()) || "";
+              ((_a = mutation.target.data) == null ? void 0 : _a.trim()) || "";
             if (stored !== void 0 && stored !== current) {
-              if (!isEngineMutating) {
-                const defaultLang =
-                  (_c = this.configManager.getTranslationConfig()) == null
-                    ? void 0
-                    : _c.defaultLang;
-                if (currentLang === defaultLang) {
-                  parent.setAttribute(
-                    ATTRIBUTES.SOURCE_TEXT,
-                    mutation.target.data || ""
-                  );
-                  clearTranslatedText(textNode);
-                  translated.delete(textNode);
-                  parent.removeAttribute(ATTRIBUTES.TRANSLATION_STATE);
-                  parent.removeAttribute(ATTRIBUTES.TRANSLATED_TO);
-                }
-              }
+              parent.setAttribute(
+                ATTRIBUTES.SOURCE_TEXT,
+                mutation.target.data || ""
+              );
+              clearTranslatedText(textNode);
+              translated.delete(textNode);
+              parent.removeAttribute(ATTRIBUTES.TRANSLATION_STATE);
+              parent.removeAttribute(ATTRIBUTES.TRANSLATED_TO);
               if (!queued.has(parent)) {
                 this.onContentChange(parent);
               }
@@ -1870,7 +1866,6 @@
         } else if (mutation.type === "attributes") {
           const element = mutation.target;
           const attrName = mutation.attributeName || "";
-          const isEngineMutating = window.__isTranslatingDOM;
           const translationState = element.getAttribute(
             ATTRIBUTES.TRANSLATION_STATE
           );
@@ -1883,27 +1878,19 @@
           ) {
             const storedAttr = getTranslatedAttribute(element, attrName);
             const currentVal =
-              ((_d = element.getAttribute(attrName)) == null
+              ((_b = element.getAttribute(attrName)) == null
                 ? void 0
-                : _d.trim()) || "";
+                : _b.trim()) || "";
             if (storedAttr !== void 0 && storedAttr !== currentVal) {
-              if (!isEngineMutating) {
-                const defaultLang =
-                  (_e = this.configManager.getTranslationConfig()) == null
-                    ? void 0
-                    : _e.defaultLang;
-                if (currentLang === defaultLang) {
-                  const sourceAttributeName = `${ATTRIBUTES.SOURCE_ATTRIBUTE_PREFIX}${attrName}`;
-                  element.setAttribute(
-                    sourceAttributeName,
-                    element.getAttribute(attrName) || ""
-                  );
-                  clearTranslatedAttribute(element, attrName);
-                  translated.delete(element);
-                  element.removeAttribute(ATTRIBUTES.TRANSLATION_STATE);
-                  element.removeAttribute(ATTRIBUTES.TRANSLATED_TO);
-                }
-              }
+              const sourceAttributeName = `${ATTRIBUTES.SOURCE_ATTRIBUTE_PREFIX}${attrName}`;
+              element.setAttribute(
+                sourceAttributeName,
+                element.getAttribute(attrName) || ""
+              );
+              clearTranslatedAttribute(element, attrName);
+              translated.delete(element);
+              element.removeAttribute(ATTRIBUTES.TRANSLATION_STATE);
+              element.removeAttribute(ATTRIBUTES.TRANSLATED_TO);
               if (!queued.has(element)) {
                 this.onContentChange(element);
               }
@@ -1920,35 +1907,6 @@
           }
         }
       }
-    }
-    isSkeletonNode(node) {
-      if (node.nodeType === 1) {
-        const el = node;
-        return el.classList.contains("tl-skeleton");
-      }
-      if (node.nodeType === Node.TEXT_NODE) {
-        const parent = node.parentElement;
-        return !!parent && parent.classList.contains("tl-skeleton");
-      }
-      return false;
-    }
-    isSkeletonOnlyMutation(mutation) {
-      if (mutation.type === "childList") {
-        const onlySkeletonAdded =
-          mutation.addedNodes.length > 0 &&
-          Array.from(mutation.addedNodes).every((n) => this.isSkeletonNode(n));
-        const onlySkeletonRemoved =
-          mutation.removedNodes.length > 0 &&
-          Array.from(mutation.removedNodes).every((n) =>
-            this.isSkeletonNode(n)
-          );
-        const targetIsSkeleton = this.isSkeletonNode(mutation.target);
-        return onlySkeletonAdded || onlySkeletonRemoved || targetIsSkeleton;
-      }
-      if (mutation.type === "characterData") {
-        return this.isSkeletonNode(mutation.target);
-      }
-      return false;
     }
     isTranslatableElement(node) {
       if (node.nodeType !== 1) return false;
@@ -1967,6 +1925,10 @@
       if (element.matches(DROPDOWN_EXCLUDED_SELECTORS.join(", "))) return false;
       if (DomUtils.shouldPreventTranslation(element)) return false;
       if (DomUtils.isNonContentElement(element)) return false;
+      const currentLang = this.configManager.getCurrentLanguage();
+      if (element.getAttribute(ATTRIBUTES.TRANSLATED_TO) === currentLang) {
+        element.removeAttribute(ATTRIBUTES.TRANSLATED_TO);
+      }
       return true;
     }
     observeOpenShadowRoots(root, options) {
@@ -2076,7 +2038,12 @@
         });
         let node;
         while ((node = walker.nextNode())) {
-          textNodes.push(node.textContent);
+          const parent = node.parentElement;
+          if (parent && parent.hasAttribute(ATTRIBUTES.SOURCE_TEXT)) {
+            textNodes.push(parent.getAttribute(ATTRIBUTES.SOURCE_TEXT));
+          } else {
+            textNodes.push(node.textContent);
+          }
           nodeMap.set(textIndex, node);
           textIndex++;
         }
@@ -2587,7 +2554,8 @@
         const originalNode = nodeMap.get(index);
         if (!originalNode || !originalNode.parentElement) return;
         const parentElement = originalNode.parentElement;
-        const originalText = originalNode.textContent || "";
+        const originalText =
+          parentElement.getAttribute(ATTRIBUTES.SOURCE_TEXT) || "";
         if (!parentElement.hasAttribute(ATTRIBUTES.SOURCE_TEXT)) {
           parentElement.setAttribute(
             ATTRIBUTES.SOURCE_TEXT,
@@ -2596,10 +2564,11 @@
         }
         parentElement.setAttribute(ATTRIBUTES.TRANSLATION_STATE, "translated");
         parentElement.setAttribute(ATTRIBUTES.TRANSLATED_TO, targetLang);
+        const currentSourceText =
+          parentElement.getAttribute(ATTRIBUTES.SOURCE_TEXT) || "";
         const trimmedTranslated = translatedText.trim();
         setTranslatedText(originalNode, trimmedTranslated);
-        const currentNodeText = (originalNode.textContent || "").trim();
-        if (currentNodeText !== trimmedTranslated) {
+        if (currentSourceText.trim() !== trimmedTranslated) {
           const leadingWs =
             ((_a = originalText.match(/^\s+/)) == null ? void 0 : _a[0]) || "";
           const trailingWs =
@@ -3005,6 +2974,7 @@
         `;
       document.head.appendChild(style);
       this.updateLanguageDropdown();
+      this.startObserver();
       try {
         const apiConfig = this.configManager.getApiConfig();
         if (apiConfig) {
@@ -3038,7 +3008,6 @@
         }
       }
       applyDirection(this.configManager.getCurrentLanguage());
-      this.startObserver();
       this.navigationService.start();
       window.addEventListener("offline", () => {
         ErrorHandler.showErrorMessage(
