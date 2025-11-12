@@ -1794,6 +1794,30 @@
                     break;
                   }
                 }
+                if (storedTranslated === void 0) {
+                  mutation.removedNodes.forEach((removed) => {
+                    if (storedTranslated !== void 0) return;
+                    if (removed.nodeType === Node.TEXT_NODE) {
+                      const s = getTranslatedText(removed);
+                      if (s !== void 0) {
+                        storedTranslated = s;
+                      }
+                    } else if (removed.nodeType === 1) {
+                      const tw = document.createTreeWalker(
+                        removed,
+                        NodeFilter.SHOW_TEXT
+                      );
+                      let rt;
+                      while ((rt = tw.nextNode())) {
+                        const s2 = getTranslatedText(rt);
+                        if (s2 !== void 0) {
+                          storedTranslated = s2;
+                          break;
+                        }
+                      }
+                    }
+                  });
+                }
                 if (storedTranslated !== void 0) {
                   if (storedTranslated !== currentText) {
                     needsRetranslate = true;
