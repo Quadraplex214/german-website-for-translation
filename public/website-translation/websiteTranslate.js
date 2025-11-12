@@ -1979,9 +1979,27 @@
             textNodesChanged &&
             targetEl &&
             this.isTranslatableElement(targetEl) &&
-            !queued.has(targetEl) &&
-            !translated.has(targetEl)
+            !queued.has(targetEl)
           ) {
+            targetEl.removeAttribute(ATTRIBUTES.TRANSLATION_STATE);
+            targetEl.removeAttribute(ATTRIBUTES.TRANSLATED_TO);
+            translated.delete(targetEl);
+            const walker = document.createTreeWalker(
+              targetEl,
+              NodeFilter.SHOW_TEXT
+            );
+            let n;
+            while ((n = walker.nextNode())) {
+              clearTranslatedText(n);
+              translated.delete(n);
+            }
+            const firstChild = targetEl.firstChild;
+            if (firstChild && firstChild.nodeType === Node.TEXT_NODE) {
+              targetEl.setAttribute(
+                ATTRIBUTES.SOURCE_TEXT,
+                firstChild.textContent || ""
+              );
+            }
             this.onContentChange(targetEl);
           }
         } else if (mutation.type === "characterData") {
