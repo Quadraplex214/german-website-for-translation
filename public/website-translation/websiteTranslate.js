@@ -2841,7 +2841,6 @@
         this.setTranslating(false);
         return;
       }
-      window.__isTranslatingDOM = true;
       const skeletonMap = /* @__PURE__ */ new Map();
       nodeMap.forEach((node, _key) => {
         const parentElement = node.parentElement;
@@ -2938,7 +2937,6 @@
         throw error;
       } finally {
         this.currentAbortController = null;
-        window.__isTranslatingDOM = false;
       }
     }
     applyTranslatedAttributes(translatedAttributes, attributeMap, targetLang) {
@@ -2998,7 +2996,6 @@
         });
         return;
       }
-      window.__isTranslatingDOM = true;
       const skeletonMap = /* @__PURE__ */ new Map();
       textMap.forEach((node, key) => {
         const skeleton = SkeletonManager.apply(node);
@@ -3056,8 +3053,6 @@
           element.removeAttribute(ATTRIBUTES.TRANSLATION_STATE);
         });
         skeletonMap.forEach((skeleton) => SkeletonManager.remove(skeleton));
-      } finally {
-        window.__isTranslatingDOM = false;
       }
     }
     async switchLanguage(newLang) {
