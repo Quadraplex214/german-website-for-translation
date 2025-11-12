@@ -1967,40 +1967,22 @@
               this.onContentChange(node);
             }
           });
-          const targetEl = mutation.target;
-          const textNodesChanged =
-            Array.from(mutation.addedNodes).some(
-              (n) => n.nodeType === Node.TEXT_NODE
-            ) ||
-            Array.from(mutation.removedNodes).some(
-              (n) => n.nodeType === Node.TEXT_NODE
-            );
           if (
-            textNodesChanged &&
-            targetEl &&
-            this.isTranslatableElement(targetEl) &&
-            !queued.has(targetEl)
+            mutation.addedNodes.length > 0 ||
+            mutation.removedNodes.length > 0
           ) {
-            targetEl.removeAttribute(ATTRIBUTES.TRANSLATION_STATE);
-            targetEl.removeAttribute(ATTRIBUTES.TRANSLATED_TO);
-            translated.delete(targetEl);
-            const walker = document.createTreeWalker(
-              targetEl,
-              NodeFilter.SHOW_TEXT
-            );
-            let n;
-            while ((n = walker.nextNode())) {
-              clearTranslatedText(n);
-              translated.delete(n);
+            const container =
+              mutation.target.nodeType === 1
+                ? mutation.target
+                : mutation.target.parentElement;
+            if (
+              container &&
+              this.isTranslatableElement(container) &&
+              !queued.has(container) &&
+              !translated.has(container)
+            ) {
+              this.onContentChange(container);
             }
-            const firstChild = targetEl.firstChild;
-            if (firstChild && firstChild.nodeType === Node.TEXT_NODE) {
-              targetEl.setAttribute(
-                ATTRIBUTES.SOURCE_TEXT,
-                firstChild.textContent || ""
-              );
-            }
-            this.onContentChange(targetEl);
           }
         } else if (mutation.type === "characterData") {
           const textNode = mutation.target;
