@@ -1815,12 +1815,7 @@
                   }
                 }
               }
-              if (
-                needsRetranslate &&
-                this.isTranslatableElement(container) &&
-                !queued.has(container) &&
-                !translated.has(container)
-              ) {
+              if (needsRetranslate && !queued.has(container)) {
                 this.onContentChange(container);
               }
             }
