@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import { motion, useScroll, useTransform, useInView } from "framer-motion";
-import { useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import Navbar from "./navbar";
 import { Button } from "./ui/button";
 import { toast } from "sonner";
@@ -74,6 +74,24 @@ export default function GermanHeroFood() {
   const aboutRef = useRef<HTMLDivElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const testimonialsRef = useRef<HTMLDivElement>(null);
+  const [isTranslating, setIsTranslating] = useState(false);
+  const btnLabelRef = useRef<HTMLSpanElement>(null);
+
+  async function handleTranslate() {
+    setIsTranslating(true);
+    try {
+      // Simulate async translation work
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+    } finally {
+      setIsTranslating(false);
+    }
+  }
+
+  useEffect(() => {
+    if (btnLabelRef.current) {
+      btnLabelRef.current.textContent = isTranslating ? "Translating…" : "Translate";
+    }
+  }, [isTranslating]);
 
   const { scrollYProgress } = useScroll();
   const y = useTransform(scrollYProgress, [0, 1], ["0%", "50%"]);
@@ -176,6 +194,16 @@ export default function GermanHeroFood() {
                   }}
                 >
                   Tisch reservieren
+                </Button>
+                <Button
+                  variant="outline"
+                  size="lg"
+                  className="border-amber-600/50 text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/20 px-8 bg-transparent backdrop-blur-sm"
+                  aria-busy={isTranslating}
+                  disabled={isTranslating}
+                  onClick={handleTranslate}
+                >
+                  <span ref={btnLabelRef}>Translate</span>
                 </Button>
               </motion.div>
 
