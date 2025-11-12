@@ -1975,13 +1975,32 @@
               mutation.target.nodeType === 1
                 ? mutation.target
                 : mutation.target.parentElement;
-            if (
-              container &&
-              this.isTranslatableElement(container) &&
-              !queued.has(container) &&
-              !translated.has(container)
-            ) {
-              this.onContentChange(container);
+            if (container) {
+              const translationState = container.getAttribute(
+                ATTRIBUTES.TRANSLATION_STATE
+              );
+              const translatedTo = container.getAttribute(
+                ATTRIBUTES.TRANSLATED_TO
+              );
+              const currentLang = this.configManager.getCurrentLanguage();
+              if (
+                translationState === "translated" ||
+                translatedTo === currentLang
+              ) {
+                container.setAttribute(
+                  ATTRIBUTES.SOURCE_TEXT,
+                  container.textContent || ""
+                );
+                container.removeAttribute(ATTRIBUTES.TRANSLATION_STATE);
+                container.removeAttribute(ATTRIBUTES.TRANSLATED_TO);
+              }
+              if (
+                this.isTranslatableElement(container) &&
+                !queued.has(container) &&
+                !translated.has(container)
+              ) {
+                this.onContentChange(container);
+              }
             }
           }
         } else if (mutation.type === "characterData") {
