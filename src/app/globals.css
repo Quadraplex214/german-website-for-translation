@@ -62,7 +62,8 @@
 
 @layer utilities {
   .animate-scroll {
-    animation: scroll var(--animation-duration, 40s) var(--animation-direction, forwards) linear infinite;
+    animation: scroll var(--animation-duration, 40s)
+      var(--animation-direction, forwards) linear infinite;
   }
 }
 
@@ -191,5 +192,13 @@
     scroll-padding-top: 4rem;
     overflow-x: hidden;
   }
-  body { overflow-x: hidden; }
+  body {
+    overflow-x: hidden;
+  }
+}
+
+:root {
+  /* Optional overrides */
+  --tl-bottom: 80px;
+  --tl-right: 17px;
 }

@@ -88,6 +88,21 @@
     const direction = isRtl(lang) ? "rtl" : "ltr";
     document.documentElement.dir = direction;
     document.documentElement.lang = lang;
+    if (document.body) {
+      document.body.dir = direction;
+      document.body.lang = lang;
+    } else {
+      document.addEventListener(
+        "DOMContentLoaded",
+        () => {
+          if (document.body) {
+            document.body.dir = direction;
+            document.body.lang = lang;
+          }
+        },
+        { once: true }
+      );
+    }
     const styleElementId = "translator-rtl-overrides";
     if (!document.getElementById(styleElementId)) {
       const style = document.createElement("style");
@@ -96,6 +111,21 @@
       const selectorList = Array.from(EXCLUDED_RTL_SELECTORS).join(", ");
       style.textContent = `${selectorList} { direction: ltr !important; unicode-bidi: isolate !important; }`;
       document.head.appendChild(style);
+    }
+    const bodyEnforcerId = "translator-body-direction-enforcer";
+    const existingEnforcer = document.getElementById(bodyEnforcerId);
+    if (direction === "ltr") {
+      if (!existingEnforcer) {
+        const style = document.createElement("style");
+        style.id = bodyEnforcerId;
+        style.type = "text/css";
+        style.textContent = `body { direction: ltr !important; }`;
+        document.head.appendChild(style);
+      } else {
+        existingEnforcer.textContent = `body { direction: ltr !important; }`;
+      }
+    } else if (existingEnforcer) {
+      existingEnforcer.remove();
     }
   }
   class ErrorHandler {
@@ -927,11 +957,15 @@
       this.iconButton = null;
       this.languageList = null;
       this.isExpanded = false;
+      this.prevViewportWidth = 0;
+      this.prevViewportHeight = 0;
       this.isDragging = false;
       this.dragStartX = 0;
       this.dragStartY = 0;
       this.dragTimer = null;
       this.didDrag = false;
+      this.isAnchored = false;
+      this.usingBottomRightAnchor = true;
       this.handleMouseDown = (e) => {
         if (
           this.isExpanded ||
@@ -965,6 +999,7 @@
         ) {
           this.isDragging = true;
           this.didDrag = true;
+          this.convertToPixelAnchor();
           if (this.iconButton) this.iconButton.style.cursor = "move";
           this.container.style.transition = "none";
         }
@@ -995,10 +1030,16 @@
           if (this.iconButton) this.iconButton.style.cursor = "pointer";
           this.container.style.transition = "";
           const rect = this.container.getBoundingClientRect();
+          const rightOffset = Math.max(24, window.innerWidth - rect.right);
+          const bottomOffset = Math.max(24, window.innerHeight - rect.bottom);
           this.savePosition({
-            x: rect.left,
-            y: rect.top,
+            anchor: "br",
+            x: rightOffset,
+            y: bottomOffset,
           });
+          this.anchorContainerToBottomRight(rightOffset, bottomOffset);
+          this.isAnchored = true;
+          this.usingBottomRightAnchor = true;
         }
       };
       this.handleTouchStart = (e) => {
@@ -1042,6 +1083,7 @@
         ) {
           this.isDragging = true;
           this.didDrag = true;
+          this.convertToPixelAnchor();
           if (this.iconButton) this.iconButton.style.cursor = "move";
           this.container.style.transition = "none";
         }
@@ -1076,10 +1118,16 @@
         this.container.style.transition = "";
         if (this.container) {
           const rect = this.container.getBoundingClientRect();
+          const rightOffset = Math.max(24, window.innerWidth - rect.right);
+          const bottomOffset = Math.max(24, window.innerHeight - rect.bottom);
           this.savePosition({
-            x: rect.left,
-            y: rect.top,
+            anchor: "br",
+            x: rightOffset,
+            y: bottomOffset,
           });
+          this.anchorContainerToBottomRight(rightOffset, bottomOffset);
+          this.isAnchored = true;
+          this.usingBottomRightAnchor = true;
         }
       };
       this.toggleLanguageList = (_e) => {
@@ -1111,6 +1159,40 @@
           this.closeLanguageList();
         }
       };
+      this.handleResize = () => {
+        if (!this.container) return;
+        const currW = window.innerWidth;
+        const currH = window.innerHeight;
+        const widthChanged = Math.abs(currW - this.prevViewportWidth) > 1;
+        const heightDelta = Math.abs(currH - this.prevViewportHeight);
+        const smallHeightOnlyChange =
+          !widthChanged && heightDelta > 0 && heightDelta <= 120;
+        this.prevViewportWidth = currW;
+        this.prevViewportHeight = currH;
+        if (this.usingBottomRightAnchor) {
+          if (this.isExpanded) {
+            this.positionLanguageList();
+          }
+          return;
+        }
+        if (this.isAnchored) {
+          const rect = this.container.getBoundingClientRect();
+          const minMargin = 24;
+          const isOutside =
+            rect.left < minMargin ||
+            rect.top < minMargin ||
+            rect.right > currW - minMargin ||
+            rect.bottom > currH - minMargin;
+          if (widthChanged || isOutside || !smallHeightOnlyChange) {
+            const clamped = this.constrainToViewport(rect.left, rect.top);
+            this.anchorContainerToPixels(clamped.x, clamped.y);
+            this.savePosition({ x: clamped.x, y: clamped.y });
+          }
+        }
+        if (this.isExpanded) {
+          this.positionLanguageList();
+        }
+      };
       this.positionLanguageList = () => {
         if (!this.container || !this.languageList) return;
         const buttonRect = this.container.getBoundingClientRect();
@@ -1118,19 +1200,78 @@
         const listHeight = this.languageList.offsetHeight;
         const viewportWidth = window.innerWidth;
         const viewportHeight = window.innerHeight;
+        const margin = 10;
         let left;
+        let top;
+        let fitsHorizontally = false;
         const screenHalf = viewportWidth / 2;
         if (buttonRect.left > screenHalf) {
-          left = buttonRect.left - listWidth - 10;
+          left = buttonRect.left - listWidth - margin;
+          if (left >= margin) {
+            fitsHorizontally = true;
+          } else {
+            left = buttonRect.right + margin;
+            if (left + listWidth + margin <= viewportWidth) {
+              fitsHorizontally = true;
+            }
+          }
         } else {
-          left = buttonRect.right + 10;
+          left = buttonRect.right + margin;
+          if (left + listWidth + margin <= viewportWidth) {
+            fitsHorizontally = true;
+          } else {
+            left = buttonRect.left - listWidth - margin;
+            if (left >= margin) {
+              fitsHorizontally = true;
+            }
+          }
         }
-        let top = buttonRect.top;
-        left = Math.max(10, Math.min(left, viewportWidth - listWidth - 10));
-        top = Math.max(10, Math.min(top, viewportHeight - listHeight - 10));
-        this.languageList.style.position = "fixed";
-        this.languageList.style.left = `${left}px`;
-        this.languageList.style.top = `${top}px`;
+        if (fitsHorizontally) {
+          top = buttonRect.top;
+          if (top + listHeight + margin > viewportHeight) {
+            top = Math.max(margin, viewportHeight - listHeight - margin);
+          }
+        } else {
+          top = buttonRect.top - listHeight - margin;
+          if (top >= margin) {
+            left = Math.max(
+              margin,
+              Math.min(
+                buttonRect.left - listWidth / 2 + buttonRect.width / 2,
+                viewportWidth - listWidth - margin
+              )
+            );
+          } else {
+            top = buttonRect.bottom + margin;
+            left = Math.max(
+              margin,
+              Math.min(
+                buttonRect.left - listWidth / 2 + buttonRect.width / 2,
+                viewportWidth - listWidth - margin
+              )
+            );
+          }
+        }
+        left = Math.max(
+          margin,
+          Math.min(left, viewportWidth - listWidth - margin)
+        );
+        const containerRect = buttonRect;
+        let relLeft = left - containerRect.left;
+        let relTop = top - containerRect.top;
+        const clampedViewportLeft = Math.max(
+          margin,
+          Math.min(left, viewportWidth - listWidth - margin)
+        );
+        relLeft = clampedViewportLeft - containerRect.left;
+        const clampedViewportTop = Math.max(
+          margin,
+          Math.min(top, viewportHeight - listHeight - margin)
+        );
+        relTop = clampedViewportTop - containerRect.top;
+        this.languageList.style.position = "absolute";
+        this.languageList.style.left = `${relLeft}px`;
+        this.languageList.style.top = `${relTop}px`;
         this.languageList.style.minHeight = `${buttonRect.height}px`;
       };
     }
@@ -1149,6 +1290,7 @@
       const style = document.getElementById(SELECTORS.DROPDOWN_STYLE);
       if (style) style.remove();
       document.removeEventListener("click", this.handleDocumentClick);
+      window.removeEventListener("resize", this.handleResize);
       this.container = null;
       this.iconButton = null;
       this.languageList = null;
@@ -1184,6 +1326,30 @@
         `;
       this.iconButton.appendChild(svgElement);
     }
+    anchorContainerToPixels(x, y) {
+      if (!this.container) return;
+      this.container.style.left = `${x}px`;
+      this.container.style.top = `${y}px`;
+      this.container.style.right = "auto";
+      this.container.style.bottom = "auto";
+    }
+    anchorContainerToBottomRight(right, bottom) {
+      if (!this.container) return;
+      this.container.style.left = "auto";
+      this.container.style.top = "auto";
+      this.container.style.right = `calc(${right}px + env(safe-area-inset-right, 0px))`;
+      this.container.style.bottom = `calc(${bottom}px + env(safe-area-inset-bottom, 0px))`;
+    }
+    convertToPixelAnchor() {
+      if (!this.container) return;
+      if (!this.usingBottomRightAnchor) return;
+      try {
+        const rect = this.container.getBoundingClientRect();
+        this.anchorContainerToPixels(rect.left, rect.top);
+        this.isAnchored = true;
+        this.usingBottomRightAnchor = false;
+      } catch {}
+    }
     update(newOptions) {
       this.options = { ...this.options, ...newOptions };
       this.updateButtonLanguage();
@@ -1210,13 +1376,23 @@
     generateCSS(theme) {
       const baseColors = this.getBaseColors(theme);
       const themeColors = baseColors;
-      const thumbColor = "rgba(255,255,255,0.35)";
-      const thumbHoverColor = "rgba(255,255,255,0.55)";
+      const isDark = theme === "dark";
+      const thumbColor = isDark ? "rgba(255,255,255,0.35)" : "rgba(0,0,0,0.2)";
+      const thumbHoverColor = isDark
+        ? "rgba(255,255,255,0.55)"
+        : "rgba(0,0,0,0.35)";
+      const trackColor = themeColors.bg;
       return `
             #${SELECTORS.DROPDOWN_CONTAINER} {
                 position: fixed;
-                bottom: 20px;
-                right: 80px;
+                top: var(--tl-top, auto);
+                top: calc(var(--tl-top) + env(safe-area-inset-top, 0px));
+                left: var(--tl-left, auto);
+                left: calc(var(--tl-left) + env(safe-area-inset-left, 0px));
+                bottom: var(--tl-bottom, 24px);
+                bottom: calc(var(--tl-bottom, 24px) + env(safe-area-inset-bottom, 0px));
+                right: var(--tl-right, 24px);
+                right: calc(var(--tl-right, 24px) + env(safe-area-inset-right, 0px));
                 z-index: 2147483647;
                 width: 50px;
                 height: 50px;
@@ -1224,9 +1400,10 @@
                 flex-direction: column;
                 align-items: center;
                 background: transparent;
-                transition: all 0.3s ease;
+                transition: none;
 				cursor: default;
                 font-family: var(--tl-font-family, 'Inter', sans-serif);
+                will-change: transform;
             }
 
             #${SELECTORS.DROPDOWN} {
@@ -1240,7 +1417,7 @@
                 align-items: center;
                 justify-content: center;
 				cursor: pointer;
-                transition: all 0.3s ease;
+                transition: transform 0.3s ease;
                 color: var(--tl-color, ${themeColors.color});
                 position: absolute;
                 top: 0;
@@ -1249,6 +1426,7 @@
                 font-family: var(--tl-font-family, 'Inter', sans-serif);
                 font-size: 12px;
                 font-weight: 500;
+                will-change: transform;
             }
 
             #${SELECTORS.DROPDOWN}:hover {
@@ -1267,7 +1445,7 @@
                 background: var(--tl-bg, ${themeColors.bg});
                 border-radius: 8px;
                 box-shadow: var(--tl-box-shadow, ${themeColors.shadow});
-                position: fixed;
+                position: absolute;
                 z-index: 2147483648;
                 font-family: var(--tl-font-family, 'Inter', sans-serif);
                 flex-direction: column;
@@ -1280,9 +1458,10 @@
                 padding-top: 10px;
                 min-height: 50px;
                 scrollbar-width: thin;
-                scrollbar-color: var(--tl-scrollbar-thumb, ${thumbColor});
+                scrollbar-color: var(--tl-scrollbar-thumb, ${thumbColor}) var(--tl-scrollbar-track, ${trackColor});
                 --tl-scrollbar-thumb: ${thumbColor};
                 --tl-scrollbar-thumb-hover: ${thumbHoverColor};
+                --tl-scrollbar-track: ${trackColor};
             }
 
             #${SELECTORS.DROPDOWN_CONTAINER}.expanded .language-list {
@@ -1294,7 +1473,7 @@
 				width: 8px;
 			}
 			#${SELECTORS.DROPDOWN_CONTAINER} .language-options-scroll::-webkit-scrollbar-track {
-				background: transparent;
+				background: var(--tl-scrollbar-track, ${trackColor});
 			}
 			#${SELECTORS.DROPDOWN_CONTAINER} .language-options-scroll::-webkit-scrollbar-thumb {
 				background-color: var(--tl-scrollbar-thumb, ${thumbColor});
@@ -1339,7 +1518,7 @@
                 
                 font-size: 10px !important;
                 font-weight: 400 !important;
-                color: var(--tl-powered-color, #000000) !important;
+                color: var(--tl-powered-color, #666) !important;
                 text-decoration: none !important;
                 line-height: 1 !important;
                 
@@ -1373,16 +1552,26 @@
             }
         `;
     }
-    getBaseColors(_theme) {
-      return {
-        bg: "#ffffff",
-        bgHover: "#f5f5f5",
-        color: "#000000",
-        border: "1px solid #e0e0e0",
-        shadow: "0 2px 8px rgba(0,0,0,0.1)",
-        optionBg: "#ffffff",
-        optionColor: "#000000",
-      };
+    getBaseColors(theme) {
+      return theme === "light"
+        ? {
+            bg: "#ffffff",
+            bgHover: "#f5f5f5",
+            color: "#333333",
+            border: "1px solid #e0e0e0",
+            shadow: "0 2px 8px rgba(0,0,0,0.1)",
+            optionBg: "#ffffff",
+            optionColor: "#333333",
+          }
+        : {
+            bg: "#333333",
+            bgHover: "#555555",
+            color: "#ffffff",
+            border: "none",
+            shadow: "0 2px 8px rgba(0,0,0,0.3)",
+            optionBg: "#333333",
+            optionColor: "#ffffff",
+          };
     }
     capitalizeLabel(label) {
       const escapeHtml = (unsafe) => {
@@ -1430,11 +1619,27 @@
     restorePosition() {
       if (!this.container) return;
       const position = this.loadPosition();
-      if (position) {
-        this.container.style.left = `${position.x}px`;
-        this.container.style.top = `${position.y}px`;
-        this.container.style.right = "auto";
-        this.container.style.bottom = "auto";
+      if (!position) return;
+      if (position.anchor === "br") {
+        const right = Math.max(24, position.x ?? 24);
+        const bottom = Math.max(24, position.y ?? 24);
+        this.anchorContainerToBottomRight(right, bottom);
+        this.isAnchored = true;
+        this.usingBottomRightAnchor = true;
+        this.savePosition({ anchor: "br", x: right, y: bottom });
+        return;
+      }
+      try {
+        if (window.innerWidth <= 768) {
+          return;
+        }
+      } catch {}
+      if (typeof position.x === "number" && typeof position.y === "number") {
+        const clamped = this.constrainToViewport(position.x, position.y);
+        this.anchorContainerToPixels(clamped.x, clamped.y);
+        this.isAnchored = true;
+        this.usingBottomRightAnchor = false;
+        this.savePosition({ x: clamped.x, y: clamped.y });
       }
     }
     // Local storage methods
@@ -1562,10 +1767,10 @@
       this.iconButton.style.left = "0";
       this.iconButton.style.width = "100%";
       this.iconButton.style.height = "100%";
-      this.iconButton.style.background = "var(--tl-bg, #ffffff)";
-      this.iconButton.style.border = "var(--tl-border, 1px solid #e0e0e0)";
+      this.iconButton.style.background = "var(--tl-bg, #333333)";
+      this.iconButton.style.border = "var(--tl-border, none)";
       this.iconButton.style.borderRadius = "50%";
-      this.iconButton.style.color = "var(--tl-color, #000000)";
+      this.iconButton.style.color = "var(--tl-color, #ffffff)";
       this.iconButton.style.cursor = "pointer";
       this.iconButton.style.display = "flex";
       this.iconButton.style.alignItems = "center";
@@ -1608,6 +1813,10 @@
       iconWrapper.style.justifyContent = "center";
       this.iconButton.appendChild(svgElement);
       iconWrapper.appendChild(this.iconButton);
+      this.iconButton.addEventListener("mousedown", this.handleMouseDown);
+      this.iconButton.addEventListener("touchstart", this.handleTouchStart, {
+        passive: false,
+      });
       this.iconButton.addEventListener("click", (e) => {
         if (this.didDrag) {
           e.preventDefault();
@@ -1622,7 +1831,6 @@
       this.populateLanguageList();
       this.container.appendChild(iconWrapper);
       this.container.appendChild(this.languageList);
-      this.restorePosition();
       if (this.options.isTranslating || this.options.disabled) {
         this.iconButton.disabled = true;
         this.iconButton.setAttribute(
@@ -1633,7 +1841,11 @@
         );
       }
       document.body.appendChild(this.container);
+      this.prevViewportWidth = window.innerWidth;
+      this.prevViewportHeight = window.innerHeight;
+      this.restorePosition();
       document.addEventListener("click", this.handleDocumentClick);
+      window.addEventListener("resize", this.handleResize);
     }
   }
   const queued = /* @__PURE__ */ new WeakSet();
@@ -1759,96 +1971,6 @@
               this.onContentChange(node);
             }
           });
-          if (
-            mutation.addedNodes.length > 0 ||
-            mutation.removedNodes.length > 0
-          ) {
-            const container =
-              mutation.target.nodeType === 1
-                ? mutation.target
-                : mutation.target.parentElement;
-            if (container) {
-              const translationState = container.getAttribute(
-                ATTRIBUTES.TRANSLATION_STATE
-              );
-              const translatedTo = container.getAttribute(
-                ATTRIBUTES.TRANSLATED_TO
-              );
-              const currentLang = this.configManager.getCurrentLanguage();
-              let needsRetranslate = false;
-              if (
-                translationState === "translated" ||
-                translatedTo === currentLang
-              ) {
-                const currentText = (container.textContent || "").trim();
-                let storedTranslated = void 0;
-                const walker = document.createTreeWalker(
-                  container,
-                  NodeFilter.SHOW_TEXT
-                );
-                let t;
-                while ((t = walker.nextNode())) {
-                  const stored = getTranslatedText(t);
-                  if (stored !== void 0) {
-                    storedTranslated = stored;
-                    break;
-                  }
-                }
-                if (storedTranslated === void 0) {
-                  mutation.removedNodes.forEach((removed) => {
-                    if (storedTranslated !== void 0) return;
-                    if (removed.nodeType === Node.TEXT_NODE) {
-                      const s = getTranslatedText(removed);
-                      if (s !== void 0) {
-                        storedTranslated = s;
-                      }
-                    } else if (removed.nodeType === 1) {
-                      const tw = document.createTreeWalker(
-                        removed,
-                        NodeFilter.SHOW_TEXT
-                      );
-                      let rt;
-                      while ((rt = tw.nextNode())) {
-                        const s2 = getTranslatedText(rt);
-                        if (s2 !== void 0) {
-                          storedTranslated = s2;
-                          break;
-                        }
-                      }
-                    }
-                  });
-                }
-                if (storedTranslated !== void 0) {
-                  if (storedTranslated !== currentText) {
-                    needsRetranslate = true;
-                  }
-                } else {
-                  const originalSource = (
-                    container.getAttribute(ATTRIBUTES.SOURCE_TEXT) || ""
-                  ).trim();
-                  if (originalSource && currentText === originalSource) {
-                    needsRetranslate = true;
-                  }
-                }
-                if (needsRetranslate) {
-                  container.setAttribute(
-                    ATTRIBUTES.SOURCE_TEXT,
-                    container.textContent || ""
-                  );
-                  container.removeAttribute(ATTRIBUTES.TRANSLATION_STATE);
-                  container.removeAttribute(ATTRIBUTES.TRANSLATED_TO);
-                }
-              }
-              if (
-                needsRetranslate &&
-                this.isTranslatableElement(container) &&
-                !queued.has(container) &&
-                !translated.has(container)
-              ) {
-                this.onContentChange(container);
-              }
-            }
-          }
         } else if (mutation.type === "characterData") {
           const textNode = mutation.target;
           const parent = mutation.target.parentElement;
