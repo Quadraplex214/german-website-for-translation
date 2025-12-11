@@ -53,7 +53,7 @@ export default function RootLayout({
         </LanguageProvider>
         <Script
           src="/website-translation/websiteTranslate.js"
-          data-api-key="wt_b9ed8167461c4295_zPUY-o__Npqvgakacn13sA"
+          data-api-key="wt_5573e47275a64ff9_p07VZ4zDFW3ItHg9rcMM9g"
         />
       </body>
     </html>

@@ -145,7 +145,7 @@
       errorContent.style.cssText =
         "display: flex; flex-direction: column; gap: 8px;";
       const messageDiv = document.createElement("div");
-      messageDiv.textContent = errorDetail.message;
+      messageDiv.textContent = "Something went wrong";
       errorContent.appendChild(messageDiv);
       if (errorDetail.retryable && retryCallback) {
         const retryButton = document.createElement("button");
