@@ -128,7 +128,10 @@
       existingEnforcer.remove();
     }
   }
-  class ErrorHandler {
+  const _ErrorHandler = class _ErrorHandler {
+    static registerDropdownErrorListener(listener) {
+      this.dropdownErrorListener = listener;
+    }
     static showErrorMessage(type, details, retryCallback) {
       const existing = document.getElementById(SELECTORS.ERROR_MESSAGE);
       if (existing) existing.remove();
@@ -136,6 +139,9 @@
       errorDiv.id = SELECTORS.ERROR_MESSAGE;
       errorDiv.setAttribute("data-no-translate", "true");
       const errorDetail = this.getErrorDetail(type, details);
+      if (this.dropdownErrorListener) {
+        this.dropdownErrorListener(errorDetail);
+      }
       console.error(
         `Translation Error [${type}]:`,
         errorDetail.message,
@@ -259,11 +265,16 @@
     static clearError() {
       const existing = document.getElementById(SELECTORS.ERROR_MESSAGE);
       if (existing) existing.remove();
+      if (this.dropdownErrorListener) {
+        this.dropdownErrorListener(null);
+      }
     }
     static isOffline() {
       return !navigator.onLine;
     }
-  }
+  };
+  _ErrorHandler.dropdownErrorListener = null;
+  let ErrorHandler = _ErrorHandler;
   function snakeToCamelString(str) {
     return str.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
   }
@@ -1357,20 +1368,27 @@
         this.populateLanguageList();
       }
       if (this.iconButton) {
-        if (this.options.isTranslating || this.options.disabled) {
-          this.iconButton.disabled = true;
+        const hasError = !!this.options.errorMessage;
+        const isBusy = !!this.options.isTranslating;
+        const isDisabled = !!this.options.disabled;
+        const shouldDisableButton = isBusy || isDisabled;
+        this.iconButton.disabled = shouldDisableButton;
+        if (isBusy) {
+          this.iconButton.setAttribute("title", "Translation is in progress");
+        } else if (hasError) {
           this.iconButton.setAttribute(
             "title",
-            this.options.isTranslating
-              ? "Translation is in progress"
-              : "Translation service unavailable"
+            this.options.errorMessage || "Translation error"
           );
-          this.positionLanguageList();
+        } else if (isDisabled) {
+          this.iconButton.setAttribute(
+            "title",
+            "Translation service unavailable"
+          );
         } else {
-          this.iconButton.disabled = false;
           this.iconButton.removeAttribute("title");
-          this.positionLanguageList();
         }
+        this.positionLanguageList();
       }
     }
     generateCSS(theme) {
@@ -1550,6 +1568,10 @@
 				color: var(--tl-color-muted, #888);
 				font-family: var(--tl-font-family, 'Inter', sans-serif);
             }
+
+            #${SELECTORS.DROPDOWN_CONTAINER} .language-list .language-option.translation-status.error {
+                color: #dc2626;
+            }
         `;
     }
     getBaseColors(theme) {
@@ -1672,13 +1694,19 @@
       this.languageList.innerHTML = "";
       const scrollContainer = document.createElement("div");
       scrollContainer.classList.add("language-options-scroll");
-      if (this.options.isTranslating || this.options.disabled) {
+      const hasError = !!this.options.errorMessage;
+      if (this.options.isTranslating || this.options.disabled || hasError) {
         const statusOption = document.createElement("div");
         statusOption.classList.add("language-option", "translation-status");
         statusOption.setAttribute("data-no-translate", "true");
-        statusOption.textContent = this.options.isTranslating
-          ? "Language being translated..."
-          : "Translation service unavailable";
+        if (hasError && this.options.errorMessage) {
+          statusOption.textContent = this.options.errorMessage;
+          statusOption.classList.add("error");
+        } else {
+          statusOption.textContent = this.options.isTranslating
+            ? "Language being translated..."
+            : "Translation service unavailable";
+        }
         statusOption.style.cursor = "default";
         statusOption.style.opacity = "0.6";
         statusOption.style.pointerEvents = "none";
@@ -2631,6 +2659,18 @@
           onLanguageChange: (newLang) => this.switchLanguage(newLang),
         });
         this.languageDropdown.create();
+        ErrorHandler.registerDropdownErrorListener((detail) => {
+          if (!this.languageDropdown) return;
+          if (detail) {
+            this.languageDropdown.update({
+              errorMessage: detail.message,
+            });
+          } else {
+            this.languageDropdown.update({
+              errorMessage: void 0,
+            });
+          }
+        });
       } else {
         this.languageDropdown.update(dropdownOptions);
       }
