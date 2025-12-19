@@ -302,7 +302,7 @@
       this.maxRetries = 3;
       this.apiUrl =
         (apiConfig == null ? void 0 : apiConfig.apiUrl) ||
-        "https://html-translator-136516919516.europe-west2.run.app";
+        "https://html-translator-dev-136516919516.europe-west2.run.app";
       this.onCriticalError = onCriticalError;
     }
     getApiUrl() {
