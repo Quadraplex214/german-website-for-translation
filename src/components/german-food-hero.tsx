@@ -162,7 +162,7 @@ export default function GermanHeroFood() {
                   - entdecken Sie das reiche kulinarische Erbe Deutschlands
                 </motion.p>
 
-                <p>CAMB.AI is the gold standard in <strong>AI-powered Localization</strong>, translating every language (150+), every nuance, every emotion, in real time.</p>
+                {/* <p>CAMB.AI is the gold standard in <strong>AI-powered Localization</strong>, translating every language (150+), every nuance, every emotion, in real time.</p> */}
               </div>
 
               <motion.div
