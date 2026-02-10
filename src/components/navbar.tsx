@@ -1,5 +1,6 @@
 "use client";
 import { ChefHat, Menu, X, Sun, Moon } from "lucide-react";
+import Link from "next/link";
 import { useState, useEffect } from "react";
 import { useTheme } from "next-themes";
 import { motion, AnimatePresence } from "framer-motion";
@@ -8,27 +9,22 @@ import { Button } from "./ui/button";
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
-  const { theme, setTheme, resolvedTheme } = useTheme();
+  const { setTheme, resolvedTheme } = useTheme();
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
   const navItems = [
-    { name: "Startseite", href: "#home" },
-    { name: "Über uns", href: "#about" },
-    { name: "Speisekarte", href: "#menu" },
-    { name: "Bewertungen", href: "#testimonials" },
-    { name: "Kontakt", href: "#contact" },
+    { name: "Startseite", href: "/" },
+    { name: "Über uns", href: "/#about" },
+    { name: "Speisekarte", href: "/menu" },
+    { name: "Reservierung", href: "/reservations" },
+    { name: "Events", href: "/events" },
+    { name: "Catering", href: "/catering" },
+    { name: "Bewertungen", href: "/#testimonials" },
+    { name: "Kontakt", href: "/#contact" },
   ];
-
-  const scrollToSection = (href: string) => {
-    const element = document.querySelector(href);
-    if (element) {
-      element.scrollIntoView({ behavior: "smooth" });
-    }
-    setIsOpen(false);
-  };
 
   const toggleTheme = () => {
     setTheme(resolvedTheme === "dark" ? "light" : "dark");
@@ -48,23 +44,26 @@ export default function Navbar() {
                 Gasthaus München
               </span>
             </div>
-            <div className="hidden md:flex items-center space-x-8">
+            <div className="hidden md:flex items-center space-x-6">
               {navItems.map((item) => (
-                <button
+                <Link
                   key={item.name}
-                  className="text-neutral-600 hover:text-amber-600 transition-colors font-medium"
+                  href={item.href}
+                  className="text-sm md:text-[15px] text-neutral-600 hover:text-amber-600 transition-colors font-medium"
                 >
                   {item.name}
-                </button>
+                </Link>
               ))}
             </div>
             <div className="hidden md:flex items-center gap-4">
               <Button variant="ghost" size="icon" className="text-neutral-600">
                 <Sun className="h-5 w-5" />
               </Button>
-              <Button className="bg-amber-600 hover:bg-amber-700 text-white">
-                Reservierung
-              </Button>
+              <Link href="/reservations">
+                <Button className="bg-amber-600 hover:bg-amber-700 text-white">
+                  Reservierung
+                </Button>
+              </Link>
             </div>
           </div>
         </div>
@@ -85,15 +84,15 @@ export default function Navbar() {
           </div>
 
           {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center space-x-8">
+          <div className="hidden md:flex items-center space-x-6">
             {navItems.map((item) => (
-              <button
+              <Link
                 key={item.name}
-                onClick={() => scrollToSection(item.href)}
-                className="text-neutral-600 dark:text-neutral-300 hover:text-amber-600 dark:hover:text-amber-400 transition-colors font-medium"
+                href={item.href}
+                className="text-sm md:text-[15px] text-neutral-600 dark:text-neutral-300 hover:text-amber-600 dark:hover:text-amber-400 transition-colors font-medium"
               >
                 {item.name}
-              </button>
+              </Link>
             ))}
           </div>
 
@@ -111,9 +110,11 @@ export default function Navbar() {
                 <Moon className="h-5 w-5" />
               )}
             </Button>
-            <Button className="bg-amber-600 hover:bg-amber-700 text-white">
-              Reservierung
-            </Button>
+            <Link href="/reservations">
+              <Button className="bg-amber-600 hover:bg-amber-700 text-white">
+                Reservierung
+              </Button>
+            </Link>
           </div>
 
           {/* Mobile Menu Button */}
@@ -155,18 +156,21 @@ export default function Navbar() {
             >
               <div className="py-4 space-y-4">
                 {navItems.map((item) => (
-                  <button
+                  <Link
                     key={item.name}
-                    onClick={() => scrollToSection(item.href)}
-                    className="block w-full text-left px-4 py-2 text-neutral-600 dark:text-neutral-300 hover:text-amber-600 dark:hover:text-amber-400 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-lg transition-colors"
+                    href={item.href}
+                    onClick={() => setIsOpen(false)}
+                    className="block w-full px-4 py-2 text-neutral-600 dark:text-neutral-300 hover:text-amber-600 dark:hover:text-amber-400 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-lg transition-colors text-sm"
                   >
                     {item.name}
-                  </button>
+                  </Link>
                 ))}
                 <div className="px-4 pt-2">
-                  <Button className="w-full bg-amber-600 hover:bg-amber-700 text-white">
-                    Reservierung
-                  </Button>
+                  <Link href="/reservations" onClick={() => setIsOpen(false)}>
+                    <Button className="w-full bg-amber-600 hover:bg-amber-700 text-white">
+                      Reservierung
+                    </Button>
+                  </Link>
                 </div>
               </div>
             </motion.div>

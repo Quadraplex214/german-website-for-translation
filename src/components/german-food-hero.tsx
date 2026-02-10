@@ -549,7 +549,7 @@ export default function GermanHeroFood() {
                 </li>
                 <li>
                   <a
-                    href="#reservations"
+                    href="/reservations"
                     className="text-neutral-300 hover:text-amber-400 transition-colors"
                   >
                     Reservierungen
@@ -557,7 +557,7 @@ export default function GermanHeroFood() {
                 </li>
                 <li>
                   <a
-                    href="#events"
+                    href="/events"
                     className="text-neutral-300 hover:text-amber-400 transition-colors"
                   >
                     Private Veranstaltungen
@@ -565,7 +565,7 @@ export default function GermanHeroFood() {
                 </li>
                 <li>
                   <a
-                    href="#catering"
+                    href="/catering"
                     className="text-neutral-300 hover:text-amber-400 transition-colors"
                   >
                     Catering
@@ -638,19 +638,19 @@ export default function GermanHeroFood() {
               </p>
               <div className="flex gap-6 text-sm">
                 <a
-                  href="#privacy"
+                  href="/privacy"
                   className="text-neutral-400 hover:text-amber-400 transition-colors"
                 >
                   Datenschutz
                 </a>
                 <a
-                  href="#terms"
+                  href="/terms"
                   className="text-neutral-400 hover:text-amber-400 transition-colors"
                 >
                   AGB
                 </a>
                 <a
-                  href="#cookies"
+                  href="/cookies"
                   className="text-neutral-400 hover:text-amber-400 transition-colors"
                 >
                   Cookie-Richtlinie
