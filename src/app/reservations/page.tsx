@@ -1,13 +1,10 @@
 "use client";
 
-import Navbar from "@/components/navbar";
 import { CalendarDays, Users, Phone, Mail, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export default function ReservationsPage() {
   return (
-    <>
-      <Navbar />
       <main className="min-h-screen bg-gradient-to-b from-white via-amber-50 to-orange-50 dark:from-neutral-950 dark:via-neutral-950 dark:to-black pt-24 pb-16">
         <section className="container mx-auto px-4 md:px-6 space-y-16">
           {/* Hero */}
@@ -150,7 +147,6 @@ export default function ReservationsPage() {
           </div>
         </section>
       </main>
-    </>
   );
 }
 

@@ -48,8 +48,6 @@ const cateringPackages = [
 
 export default function CateringPage() {
   return (
-    <>
-      <Navbar />
       <main className="min-h-screen bg-gradient-to-b from-amber-50 via-neutral-50 to-white dark:from-neutral-950 dark:via-neutral-950 dark:to-black pt-24 pb-16">
         <section className="container mx-auto px-4 md:px-6 space-y-16">
           {/* Hero */}
@@ -154,7 +152,6 @@ export default function CateringPage() {
           </div>
         </section>
       </main>
-    </>
   );
 }
 

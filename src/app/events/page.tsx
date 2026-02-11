@@ -7,8 +7,6 @@ import { Button } from "@/components/ui/button";
 
 export default function EventsPage() {
   return (
-    <>
-      <Navbar />
       <main className="min-h-screen bg-gradient-to-b from-neutral-50 via-amber-50 to-white dark:from-neutral-950 dark:via-neutral-950 dark:to-black pt-24 pb-16">
         <section className="container mx-auto px-4 md:px-6 space-y-16">
           {/* Hero */}
@@ -144,7 +142,6 @@ export default function EventsPage() {
           </div>
         </section>
       </main>
-    </>
   );
 }
 
