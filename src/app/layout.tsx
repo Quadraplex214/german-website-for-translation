@@ -56,11 +56,11 @@ export default function RootLayout({
             <Footer />
           </ThemeProvider>
         </LanguageProvider>
-        {/* <Script
+        <Script
           src="https://storage.googleapis.com/website-translation-script/translator.dev.js"
           data-api-key={process.env.NEXT_PUBLIC_TRANSLATOR_API_KEY || "wt_b9ed8167461c4295_zPUY-o__Npqvgakacn13sA"}
           data-disable-auto-browser-translation="true"
-        /> */}
+        />
       </body>
     </html>
   );
