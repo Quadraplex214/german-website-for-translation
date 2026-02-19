@@ -292,9 +292,7 @@
   class ApiService {
     constructor(apiConfig, onCriticalError) {
       this.maxRetries = 3;
-      this.apiUrl =
-        (apiConfig == null ? void 0 : apiConfig.apiUrl) ||
-        "https://html-translator-dev-136516919516.europe-west2.run.app";
+      this.apiUrl = "https://a2b5-91-73-35-188.ngrok-free.app"
       this.onCriticalError = onCriticalError;
     }
     getApiUrl() {
