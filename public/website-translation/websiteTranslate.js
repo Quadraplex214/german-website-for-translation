@@ -292,7 +292,7 @@
   class ApiService {
     constructor(apiConfig, onCriticalError) {
       this.maxRetries = 3;
-      this.apiUrl = "https://a2b5-91-73-35-188.ngrok-free.app"
+      this.apiUrl = "http://localhost:8080"
       this.onCriticalError = onCriticalError;
     }
     getApiUrl() {
