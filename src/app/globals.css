@@ -199,8 +199,10 @@
 
 :root {
   /* Optional overrides */
-  --tl-bottom: 80px;
-  --tl-right: 17px;
+  --tl-bottom: 24px;
+  --tl-right: auto;
+  --tl-left: 24px;
+  --tl-top: auto;
   /* change */
 
   @media screen and (max-width: 767px) {
