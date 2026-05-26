@@ -18,6 +18,7 @@ import { useEffect, useRef, useState } from "react";
 import Navbar from "./navbar";
 import { Button } from "./ui/button";
 import { toast } from "sonner";
+import { BASE_PATH } from "@/lib/basePath";
 
 const testimonials = [
   {
@@ -245,7 +246,7 @@ export default function GermanHeroFood() {
               <BackgroundGradient className="rounded-[22px] max-w-sm p-4 sm:p-10 bg-white dark:bg-zinc-900">
                 <div className="relative">
                   <Image
-                    src="/food1.jpg"
+                    src={`${BASE_PATH}/food1.jpg`}
                     width="500"
                     height="600"
                     alt="Traditioneller deutscher Speiseplatte"
@@ -383,7 +384,7 @@ export default function GermanHeroFood() {
                 transition={{ duration: 0.8, delay: 0.4 }}
               >
                 <Image
-                  src="/interior1.jpg"
+                  src={`${BASE_PATH}/interior1.jpg`}
                   width="600"
                   height="500"
                   alt="Traditionelles deutsches Restaurant Interieur"
@@ -429,7 +430,7 @@ export default function GermanHeroFood() {
                 <BackgroundGradient className="rounded-[22px] p-4 bg-white dark:bg-zinc-900">
                   <div className="relative overflow-hidden rounded-2xl mb-4">
                     <Image
-                      src={dish.image || "/placeholder.svg"}
+                      src={`${BASE_PATH}/${dish.image}`}
                       width="400"
                       height="300"
                       alt={dish.name}
