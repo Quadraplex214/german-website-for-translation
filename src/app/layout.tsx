@@ -57,8 +57,8 @@ export default function RootLayout({
           </ThemeProvider>
         </LanguageProvider>
         <Script
-          src="https://storage.googleapis.com/website-translation-script/translator.staging.js"
-          data-api-key="wt_2c121c6f8f8a48e1_fVa-wZ8814aG-CJ3ge5u3Q"
+          src="https://storage.googleapis.com/website-translation-script/translator.js"
+          data-api-key="wt_d64de94d6cbc48f3_P9P-m-3r2U2v4CTQzO-nuw"
           data-disable-auto-browser-translation="true"
         />
       </body>
