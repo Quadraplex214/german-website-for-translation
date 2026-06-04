@@ -2,7 +2,9 @@
   "use strict";
   const API_ENDPOINTS = {
     CONFIG: "/translate/config",
-    TEXT_BASED: "/translate/text-based"
+    TEXT_BASED: "/translate/text-based",
+    CHECK_EDIT_PERMISSION: "/translate/cache/check-edit-permission",
+    CACHE_UPDATE_ON_PAGE: "/translate/cache/update-on-page"
   };
   const SELECTORS = {
     ERROR_MESSAGE: "tl-error-message",
@@ -12,6 +14,7 @@
     POWERED_BY: "tl-powered-by"
   };
   const ATTRIBUTES = {
+    NO_TRANSLATE: "data-no-translate",
     TRANSLATED_TO: "data-tl-to",
     SOURCE_TEXT: "data-tl-src",
     SOURCE_ATTRIBUTE_PREFIX: "data-tl-src-",
@@ -51,6 +54,14 @@
     "noscript"
   ];
   const EXCLUDED_RTL_SELECTORS = ["[data-no-rtl]", '[data-rtl="false"]', ".noRtl", ".no-rtl"];
+  const CACHE_EDITOR_SELECTORS = {
+    HOVER: "ce-hover",
+    HIGHLIGHT: "ce-highlight",
+    POPOVER: "ce-popover",
+    POPOVER_STYLE: "ce-popover-style",
+    EDIT_PILL: "tl-edit-pill",
+    EDIT_PILL_STYLE: "tl-edit-pill-style"
+  };
   const HARD_CODED_RTL = /* @__PURE__ */ new Set([
     "ar",
     // Arabic
@@ -236,6 +247,32 @@
       return !navigator.onLine;
     }
   }
+  async function parseHttpErrorMessage(response, fallback) {
+    const defaultMessage = fallback ?? `Request failed (${response.status})`;
+    const data = await response.json().catch(() => null);
+    if (!data || typeof data !== "object") return defaultMessage;
+    const detail = data.detail;
+    if (typeof detail === "string" && detail.trim()) {
+      return detail.trim();
+    }
+    if (Array.isArray(detail)) {
+      const parts = detail.map((item) => {
+        if (!item || typeof item !== "object") return "";
+        const msg = item.msg ?? item.message;
+        return typeof msg === "string" ? msg.trim() : "";
+      }).filter(Boolean);
+      if (parts.length) return parts.join(" ");
+    }
+    if (detail && typeof detail === "object") {
+      const message = detail.message;
+      if (typeof message === "string" && message.trim()) return message.trim();
+    }
+    const topLevelMessage = data.message;
+    if (typeof topLevelMessage === "string" && topLevelMessage.trim()) {
+      return topLevelMessage.trim();
+    }
+    return defaultMessage;
+  }
   function snakeToCamelString(str) {
     return str.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
   }
@@ -363,7 +400,7 @@
       }
     }
     async handleConfigError(response) {
-      var _a;
+      var _a, _b;
       const errorData = await response.json().catch(() => ({}));
       if (response.status === 401) {
         ErrorHandler.showErrorMessage(
@@ -378,7 +415,7 @@
       } else if (response.status === 404) {
         ErrorHandler.showErrorMessage(
           "server",
-          errorData.detail.payload.error === "website_not_found" ? errorData.detail.payload.message : "Translation configuration not found."
+          ((_a = errorData == null ? void 0 : errorData.detail) == null ? void 0 : _a.error) === "website_not_found" ? errorData.detail.message : "Translation configuration not found."
         );
       } else if (response.status === 429) {
         ErrorHandler.showErrorMessage(
@@ -389,7 +426,7 @@
       } else if (response.status >= 500) {
         if (errorData.detail && errorData.detail.includes("Redis connection failed")) {
           ErrorHandler.showErrorMessage("server", "Translation service unavailable (Redis connection failed)");
-          (_a = this.onCriticalError) == null ? void 0 : _a.call(this);
+          (_b = this.onCriticalError) == null ? void 0 : _b.call(this);
         } else {
           ErrorHandler.showErrorMessage("server");
         }
@@ -534,6 +571,49 @@
     }
     static isAbortError(error) {
       return error.name === "AbortError";
+    }
+    async shouldEnableEditSession(apiConfig) {
+      try {
+        const response = await fetch(`${this.apiUrl}${API_ENDPOINTS.CHECK_EDIT_PERMISSION}`, {
+          method: "GET",
+          credentials: "include",
+          headers: {
+            Authorization: `Bearer ${apiConfig.key}`,
+            Origin: typeof window !== "undefined" ? window.location.origin : "",
+            "Content-Type": "application/json"
+          }
+        });
+        if (!response.ok) {
+          return false;
+        }
+        const data = await response.json();
+        return (data == null ? void 0 : data.can_edit) === true;
+      } catch {
+        return false;
+      }
+    }
+    async updateTranslationCache(params) {
+      const response = await fetch(`${this.apiUrl}${API_ENDPOINTS.CACHE_UPDATE_ON_PAGE}`, {
+        method: "PUT",
+        credentials: "include",
+        headers: {
+          Authorization: `Bearer ${params.apiConfig.key}`,
+          Origin: typeof window !== "undefined" ? window.location.origin : "",
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          source_text: params.sourceText.trim(),
+          target_lang: params.targetLang,
+          value: params.value
+        })
+      });
+      if (!response.ok) {
+        const message = await parseHttpErrorMessage(
+          response,
+          "Failed to save translation. Please try again."
+        );
+        throw new Error(message);
+      }
     }
   }
   class StorageManager {
@@ -794,6 +874,836 @@
     isInDefaultLanguage() {
       var _a;
       return this.state.currentLang === ((_a = this.state.translationConfig) == null ? void 0 : _a.defaultLang);
+    }
+  }
+  function getTranslatorThemeColors(theme) {
+    return theme === "light" ? {
+      bg: "#ffffff",
+      bgHover: "#f5f5f5",
+      color: "#333333",
+      border: "1px solid #e0e0e0",
+      shadow: "0 2px 8px rgba(0,0,0,0.1)",
+      optionBg: "#ffffff",
+      optionColor: "#333333"
+    } : {
+      bg: "#333333",
+      bgHover: "#555555",
+      color: "#ffffff",
+      border: "none",
+      shadow: "0 2px 8px rgba(0,0,0,0.3)",
+      optionBg: "#333333",
+      optionColor: "#ffffff"
+    };
+  }
+  const POPOVER_OFFSET = 8;
+  const ACCENT$1 = "#f47c39";
+  const BTN_PRIMARY_BG = "#f47c39";
+  const BTN_PRIMARY_COLOR = "#ffffff";
+  const BTN_SECONDARY_BG = "#353535";
+  const BTN_SECONDARY_COLOR = "#ffffff";
+  function estimateTextareaRows(text, maxRows) {
+    const lines = text.split(/\n/).length;
+    const approxWrap = Math.ceil(text.length / 48);
+    return Math.min(maxRows, Math.max(3, lines, approxWrap));
+  }
+  class CacheEditorOverlay {
+    constructor(theme, actions) {
+      this.theme = theme;
+      this.actions = actions;
+      this.popover = null;
+      this.sourceField = null;
+      this.translationField = null;
+      this.saveBtn = null;
+      this.cancelBtn = null;
+      this.closeBtn = null;
+      this.saving = false;
+      this.hoveredElement = null;
+      this.anchorElement = null;
+      this.draftSnapshot = "";
+      this.popoverOpen = false;
+      this.hideTransitionTimer = null;
+      this.boundDocKeydown = (e) => this.onDocumentKeydown(e);
+      this.boundDocPointerDown = (e) => this.onDocumentPointerDown(e);
+    }
+    create() {
+      const existing = document.getElementById(CACHE_EDITOR_SELECTORS.POPOVER_STYLE);
+      if (existing) existing.remove();
+      const t = getTranslatorThemeColors(this.theme);
+      const isDark = this.theme === "dark";
+      const fieldBg = isDark ? "rgba(255,255,255,0.06)" : "#f5f5f5";
+      const fieldBorder = isDark ? "1px solid rgba(255,255,255,0.12)" : "1px solid #e0e0e0";
+      const muted = isDark ? "rgba(255,255,255,0.55)" : "#666666";
+      const headerBorder = isDark ? "1px solid rgba(255,255,255,0.1)" : "1px solid #e8e8e8";
+      const hoverOutline = isDark ? "1.5px dashed rgba(218, 95, 44, 0.96)" : "1.5px dashed rgba(196, 82, 28, 0.92)";
+      const style = document.createElement("style");
+      style.id = CACHE_EDITOR_SELECTORS.POPOVER_STYLE;
+      style.textContent = `
+            /* Soft hover indicator — signals the element is editable, does not open anything */
+            .${CACHE_EDITOR_SELECTORS.HOVER} {
+                outline: ${hoverOutline} !important;
+                outline-offset: 2px !important;
+                cursor: text !important;
+                border-radius: 3px !important;
+            }
+
+            /* Solid highlight applied only while the popover is open on this element — no bg fill */
+            .${CACHE_EDITOR_SELECTORS.HIGHLIGHT} {
+                outline: 2px solid ${ACCENT$1} !important;
+                outline-offset: 2px !important;
+                border-radius: 3px !important;
+            }
+
+            #${CACHE_EDITOR_SELECTORS.POPOVER} {
+                position: fixed;
+                z-index: 2147483647;
+                width: clamp(320px, min(90vw, 560px), 90vw);
+                max-width: 90vw;
+                background: ${t.bg};
+                color: ${t.color};
+                border: ${t.border};
+                border-radius: 8px;
+                box-shadow: ${t.shadow};
+                padding: 14px 14px 12px;
+                font-family: var(--tl-font-family, 'Inter', sans-serif);
+                font-size: 13px;
+                line-height: 1.45;
+                box-sizing: border-box;
+                pointer-events: auto;
+                opacity: 0;
+                transform: translateY(6px) scale(0.98);
+                transition: opacity 0.18s cubic-bezier(0.16, 1, 0.3, 1),
+                    transform 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+            }
+
+            #${CACHE_EDITOR_SELECTORS.POPOVER}.ce-popover--visible {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+
+            #${CACHE_EDITOR_SELECTORS.POPOVER} .ce-label {
+                display: block;
+                font-size: 11px;
+                font-weight: 600;
+                color: ${muted};
+                text-transform: uppercase;
+                letter-spacing: 0.05em;
+                margin-bottom: 6px;
+            }
+
+            #${CACHE_EDITOR_SELECTORS.POPOVER} .ce-field {
+                margin-bottom: 12px;
+            }
+
+            #${CACHE_EDITOR_SELECTORS.POPOVER} .ce-footer {
+                display: flex;
+                justify-content: flex-end;
+                gap: 8px;
+                margin-top: 4px;
+                padding-top: 10px;
+                border-top: ${headerBorder};
+            }
+
+            #${CACHE_EDITOR_SELECTORS.POPOVER} textarea {
+                width: 100%;
+                box-sizing: border-box;
+                border: ${fieldBorder};
+                border-radius: 6px;
+                padding: 8px 10px;
+                font-size: 13px;
+                font-family: inherit;
+                color: ${t.color};
+                background: ${fieldBg};
+                outline: none;
+                line-height: 1.5;
+            }
+
+            #${CACHE_EDITOR_SELECTORS.POPOVER} textarea.ce-source {
+                resize: none;
+                max-height: 200px;
+                overflow-y: auto;
+                opacity: 0.75;
+            }
+
+            #${CACHE_EDITOR_SELECTORS.POPOVER} textarea.ce-translation {
+                resize: vertical;
+                min-height: 72px;
+                max-height: 240px;
+            }
+
+            #${CACHE_EDITOR_SELECTORS.POPOVER} textarea.ce-translation:focus {
+                box-shadow: 0 0 0 2px rgba(244, 124, 57, 0.25);
+            }
+
+            #${CACHE_EDITOR_SELECTORS.POPOVER} .ce-header {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                margin-bottom: 10px;
+                padding-bottom: 8px;
+                border-bottom: ${headerBorder};
+            }
+
+            #${CACHE_EDITOR_SELECTORS.POPOVER} .ce-title {
+                font-size: 13px;
+                font-weight: 600;
+                color: ${t.color};
+                letter-spacing: 0.02em;
+            }
+
+            #${CACHE_EDITOR_SELECTORS.POPOVER} .ce-close {
+                width: 28px;
+                height: 28px;
+                border: none;
+                background: transparent;
+                cursor: pointer;
+                color: ${muted};
+                font-size: 18px;
+                line-height: 1;
+                padding: 0;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                border-radius: 6px;
+            }
+
+            #${CACHE_EDITOR_SELECTORS.POPOVER} .ce-close:hover {
+                background: ${isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.06)"};
+                color: ${t.color};
+            }
+
+            #${CACHE_EDITOR_SELECTORS.POPOVER} .ce-btn {
+                font-family: inherit;
+                font-size: 13px;
+                font-weight: 600;
+                padding: 8px 16px;
+                border-radius: 6px;
+                border: none;
+                cursor: pointer;
+                transition: opacity 0.15s ease, filter 0.15s ease;
+            }
+
+            #${CACHE_EDITOR_SELECTORS.POPOVER} .ce-btn:disabled {
+                opacity: 0.55;
+                cursor: not-allowed;
+            }
+
+            #${CACHE_EDITOR_SELECTORS.POPOVER} .ce-btn-secondary {
+                background: ${BTN_SECONDARY_BG};
+                color: ${BTN_SECONDARY_COLOR};
+            }
+
+            #${CACHE_EDITOR_SELECTORS.POPOVER} .ce-btn-secondary:hover:not(:disabled) {
+                filter: brightness(1.08);
+            }
+
+            #${CACHE_EDITOR_SELECTORS.POPOVER} .ce-btn-primary {
+                background: ${BTN_PRIMARY_BG};
+                color: ${BTN_PRIMARY_COLOR};
+            }
+
+            #${CACHE_EDITOR_SELECTORS.POPOVER} .ce-btn-primary:hover:not(:disabled) {
+                filter: brightness(0.95);
+            }
+
+            #${CACHE_EDITOR_SELECTORS.POPOVER} .ce-btn-primary.ce-saving {
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                gap: 8px;
+                min-width: 72px;
+            }
+
+            #${CACHE_EDITOR_SELECTORS.POPOVER} .ce-btn-primary.ce-saving::after {
+                content: '';
+                width: 14px;
+                height: 14px;
+                border: 2px solid currentColor;
+                border-top-color: transparent;
+                border-radius: 50%;
+                animation: ce-spin 0.65s linear infinite;
+                flex-shrink: 0;
+            }
+
+            @keyframes ce-spin {
+                to { transform: rotate(360deg); }
+            }
+
+            #${CACHE_EDITOR_SELECTORS.POPOVER}.ce-popover--locked .ce-close:disabled,
+            #${CACHE_EDITOR_SELECTORS.POPOVER}.ce-popover--locked textarea:disabled {
+                opacity: 0.65;
+                cursor: not-allowed;
+            }
+        `;
+      document.head.appendChild(style);
+    }
+    isPopoverOpen() {
+      return this.popoverOpen;
+    }
+    isSaving() {
+      return this.saving;
+    }
+    getTranslationDraft() {
+      var _a;
+      return ((_a = this.translationField) == null ? void 0 : _a.value) ?? "";
+    }
+    setSaving(saving) {
+      var _a;
+      this.saving = saving;
+      if (this.saveBtn) {
+        this.saveBtn.disabled = saving;
+        this.saveBtn.classList.toggle("ce-saving", saving);
+        this.saveBtn.setAttribute("aria-busy", saving ? "true" : "false");
+      }
+      if (this.cancelBtn) this.cancelBtn.disabled = saving;
+      if (this.closeBtn) this.closeBtn.disabled = saving;
+      if (this.translationField) this.translationField.disabled = saving;
+      (_a = this.popover) == null ? void 0 : _a.classList.toggle("ce-popover--locked", saving);
+    }
+    /** Restore translation field to the value it had when the popover opened. */
+    revertDraft() {
+      if (this.translationField) this.translationField.value = this.draftSnapshot;
+    }
+    // ─── Hover indicator (no popover) ────────────────────────────────────────
+    applyHover(element) {
+      if (this.hoveredElement === element) return;
+      this.clearHover();
+      this.hoveredElement = element;
+      element.classList.add(CACHE_EDITOR_SELECTORS.HOVER);
+    }
+    clearHover() {
+      var _a;
+      (_a = this.hoveredElement) == null ? void 0 : _a.classList.remove(CACHE_EDITOR_SELECTORS.HOVER);
+      this.hoveredElement = null;
+    }
+    // ─── Click-active highlight (popover anchor) ──────────────────────────────
+    highlightElement(element) {
+      if (this.anchorElement === element) return;
+      this.clearHighlight();
+      this.anchorElement = element;
+      element.classList.add(CACHE_EDITOR_SELECTORS.HIGHLIGHT);
+    }
+    clearHighlight() {
+      var _a;
+      (_a = this.anchorElement) == null ? void 0 : _a.classList.remove(CACHE_EDITOR_SELECTORS.HIGHLIGHT);
+    }
+    // ─── Popover ──────────────────────────────────────────────────────────────
+    showPopover(anchorElement, sourceText) {
+      this.ensurePopover();
+      if (!this.popover || !this.sourceField || !this.translationField) return;
+      const initial = (anchorElement.textContent ?? "").trim();
+      this.sourceField.value = sourceText;
+      this.translationField.value = initial;
+      this.draftSnapshot = initial;
+      this.sourceField.rows = estimateTextareaRows(sourceText, 14);
+      this.translationField.rows = Math.max(3, estimateTextareaRows(initial || " ", 12));
+      this.highlightElement(anchorElement);
+      this.popover.style.display = "block";
+      this.popover.classList.remove("ce-popover--visible");
+      this.popoverOpen = true;
+      document.addEventListener("keydown", this.boundDocKeydown, true);
+      document.addEventListener("mousedown", this.boundDocPointerDown, true);
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          var _a;
+          if (!this.popover) return;
+          this.positionPopover(anchorElement);
+          this.popover.classList.add("ce-popover--visible");
+          (_a = this.translationField) == null ? void 0 : _a.focus({ preventScroll: true });
+        });
+      });
+    }
+    hidePopover() {
+      if (!this.popover) return;
+      document.removeEventListener("keydown", this.boundDocKeydown, true);
+      document.removeEventListener("mousedown", this.boundDocPointerDown, true);
+      if (this.saving) this.setSaving(false);
+      this.popover.classList.remove("ce-popover--visible");
+      this.popoverOpen = false;
+      this.clearHighlight();
+      this.anchorElement = null;
+      if (this.hideTransitionTimer !== null) window.clearTimeout(this.hideTransitionTimer);
+      this.hideTransitionTimer = window.setTimeout(() => {
+        this.hideTransitionTimer = null;
+        if (this.popover && !this.popoverOpen) {
+          this.popover.style.display = "none";
+        }
+      }, 220);
+    }
+    reposition(anchor) {
+      if (this.popoverOpen) this.positionPopover(anchor);
+    }
+    onDocumentKeydown(e) {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        e.stopPropagation();
+        if (this.saving) return;
+        this.actions.onCancel();
+      }
+    }
+    /** Any click outside the popover closes it — blocked while a save is in flight. */
+    onDocumentPointerDown(e) {
+      if (this.saving) return;
+      const target = e.target;
+      if (!target || !this.popover) return;
+      if (this.popover.contains(target)) return;
+      this.actions.onCancel();
+    }
+    ensurePopover() {
+      var _a, _b, _c;
+      if (this.popover) return;
+      const popover = document.createElement("div");
+      popover.id = CACHE_EDITOR_SELECTORS.POPOVER;
+      popover.setAttribute(ATTRIBUTES.NO_TRANSLATE, "true");
+      popover.style.display = "none";
+      popover.innerHTML = `
+            <div class="ce-header">
+                <span class="ce-title">Edit translation</span>
+                <button type="button" class="ce-close" aria-label="Close">&#x2715;</button>
+            </div>
+            <div class="ce-field">
+                <label class="ce-label" for="ce-source-input">Source</label>
+                <textarea id="ce-source-input" class="ce-source" readonly></textarea>
+            </div>
+            <div class="ce-field">
+                <label class="ce-label" for="ce-translation-input">Translation</label>
+                <textarea id="ce-translation-input" class="ce-translation" placeholder="Translated text…"></textarea>
+            </div>
+            <div class="ce-footer">
+                <button type="button" class="ce-btn ce-btn-secondary ce-cancel">Cancel</button>
+                <button type="button" class="ce-btn ce-btn-primary ce-save">Save</button>
+            </div>
+        `;
+      this.closeBtn = popover.querySelector(".ce-close");
+      (_a = this.closeBtn) == null ? void 0 : _a.addEventListener("click", () => {
+        if (!this.saving) this.actions.onCancel();
+      });
+      this.cancelBtn = popover.querySelector(".ce-cancel");
+      this.saveBtn = popover.querySelector(".ce-save");
+      (_b = this.cancelBtn) == null ? void 0 : _b.addEventListener("click", () => {
+        if (!this.saving) this.actions.onCancel();
+      });
+      (_c = this.saveBtn) == null ? void 0 : _c.addEventListener("click", () => void this.actions.onSave());
+      document.body.appendChild(popover);
+      this.popover = popover;
+      this.sourceField = popover.querySelector(".ce-source");
+      this.translationField = popover.querySelector(".ce-translation");
+    }
+    positionPopover(anchor) {
+      if (!this.popover) return;
+      const rect = anchor.getBoundingClientRect();
+      const vw = window.innerWidth;
+      const vh = window.innerHeight;
+      const popW = this.popover.offsetWidth || 360;
+      const popH = this.popover.offsetHeight || 220;
+      let left = rect.right + POPOVER_OFFSET;
+      let top = rect.top;
+      if (left + popW > vw - POPOVER_OFFSET) left = rect.left - popW - POPOVER_OFFSET;
+      if (left < POPOVER_OFFSET) left = POPOVER_OFFSET;
+      if (top + popH > vh - POPOVER_OFFSET) top = vh - popH - POPOVER_OFFSET;
+      if (top < POPOVER_OFFSET) top = POPOVER_OFFSET;
+      this.popover.style.left = `${left}px`;
+      this.popover.style.top = `${top}px`;
+    }
+  }
+  const ACCENT = "#f47c39";
+  const PILL_SIZE = 50;
+  const GAP = 8;
+  const DROPDOWN_WAIT_MS = 8e3;
+  const DROPDOWN_POLL_MS = 50;
+  const PENCIL_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+</svg>`;
+  class CacheEditorPill {
+    constructor(theme) {
+      this.theme = theme;
+      this.active = false;
+      this.dropdownObserver = null;
+      this.pollTimer = null;
+      this.onToggle = null;
+      this.boundSyncPosition = () => this.syncPosition();
+    }
+    mount() {
+      if (document.getElementById(CACHE_EDITOR_SELECTORS.EDIT_PILL)) return;
+      this.injectStyles();
+      this.renderPill();
+      this.attachWhenDropdownReady();
+    }
+    unmount() {
+      var _a, _b, _c;
+      if (this.pollTimer !== null) {
+        window.clearInterval(this.pollTimer);
+        this.pollTimer = null;
+      }
+      (_a = this.dropdownObserver) == null ? void 0 : _a.disconnect();
+      this.dropdownObserver = null;
+      window.removeEventListener("resize", this.boundSyncPosition);
+      window.removeEventListener("scroll", this.boundSyncPosition, true);
+      (_b = document.getElementById(CACHE_EDITOR_SELECTORS.EDIT_PILL_STYLE)) == null ? void 0 : _b.remove();
+      (_c = document.getElementById(CACHE_EDITOR_SELECTORS.EDIT_PILL)) == null ? void 0 : _c.remove();
+      this.active = false;
+    }
+    injectStyles() {
+      const t = getTranslatorThemeColors(this.theme);
+      const id = CACHE_EDITOR_SELECTORS.EDIT_PILL;
+      const style = document.createElement("style");
+      style.id = CACHE_EDITOR_SELECTORS.EDIT_PILL_STYLE;
+      style.textContent = `
+            #${id} {
+                position: fixed;
+                z-index: var(--tl-z-index, 2147483647);
+                width: ${PILL_SIZE}px;
+                height: ${PILL_SIZE}px;
+                border-radius: 50%;
+                background: var(--tl-bg, ${t.bg});
+                border: var(--tl-border, ${t.border});
+                box-shadow: var(--tl-box-shadow, ${t.shadow});
+                color: var(--tl-color, ${t.color});
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                cursor: pointer;
+                padding: 0;
+                transition: transform 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+                font-family: var(--tl-font-family, 'Inter', sans-serif);
+                will-change: transform;
+            }
+
+            #${id}:hover {
+                transform: scale(1.05);
+            }
+
+            #${id}.${id}--active {
+                background: ${ACCENT};
+                border: none;
+                box-shadow: 0 2px 12px rgba(244, 124, 57, 0.5);
+                color: #ffffff;
+            }
+
+            #${id}.${id}--active:hover {
+                transform: scale(1.05);
+                filter: brightness(1.06);
+            }
+        `;
+      document.head.appendChild(style);
+    }
+    renderPill() {
+      const pill = document.createElement("button");
+      pill.id = CACHE_EDITOR_SELECTORS.EDIT_PILL;
+      pill.setAttribute("type", "button");
+      pill.setAttribute("aria-label", "Toggle edit mode");
+      pill.setAttribute("aria-pressed", "false");
+      pill.setAttribute(ATTRIBUTES.NO_TRANSLATE, "true");
+      pill.innerHTML = PENCIL_SVG;
+      pill.addEventListener("click", (e) => {
+        var _a;
+        e.stopPropagation();
+        this.active = !this.active;
+        pill.classList.toggle(`${CACHE_EDITOR_SELECTORS.EDIT_PILL}--active`, this.active);
+        pill.setAttribute("aria-pressed", String(this.active));
+        (_a = this.onToggle) == null ? void 0 : _a.call(this, this.active);
+      });
+      document.body.appendChild(pill);
+    }
+    /**
+     * Stacks the edit pill on the outer side of the language widget along the vertical axis
+     * (usually above when the widget sits toward the bottom of the viewport).
+     */
+    syncPosition() {
+      const pill = document.getElementById(CACHE_EDITOR_SELECTORS.EDIT_PILL);
+      const drop = document.getElementById(SELECTORS.DROPDOWN_CONTAINER);
+      if (!pill || !drop) return;
+      const r = drop.getBoundingClientRect();
+      const vw = window.innerWidth;
+      const vh = window.innerHeight;
+      const margin = 8;
+      const widgetMidY = r.top + r.height / 2;
+      const preferAbove = widgetMidY > vh * 0.5;
+      let left = r.left + r.width / 2 - PILL_SIZE / 2;
+      let top;
+      if (preferAbove) {
+        top = r.top - GAP - PILL_SIZE;
+        if (top < margin) top = r.bottom + GAP;
+      } else {
+        top = r.bottom + GAP;
+        if (top + PILL_SIZE > vh - margin) top = r.top - GAP - PILL_SIZE;
+      }
+      left = Math.max(margin, Math.min(left, vw - PILL_SIZE - margin));
+      top = Math.max(margin, Math.min(top, vh - PILL_SIZE - margin));
+      pill.style.left = `${Math.round(left)}px`;
+      pill.style.top = `${Math.round(top)}px`;
+      pill.style.right = "auto";
+      pill.style.bottom = "auto";
+    }
+    attachWhenDropdownReady() {
+      const start = Date.now();
+      const tryAttach = () => {
+        const drop = document.getElementById(SELECTORS.DROPDOWN_CONTAINER);
+        if (!drop) return false;
+        if (this.pollTimer !== null) {
+          window.clearInterval(this.pollTimer);
+          this.pollTimer = null;
+        }
+        this.syncPosition();
+        window.addEventListener("resize", this.boundSyncPosition);
+        window.addEventListener("scroll", this.boundSyncPosition, true);
+        this.dropdownObserver = new MutationObserver(() => this.syncPosition());
+        this.dropdownObserver.observe(drop, { attributes: true, attributeFilter: ["style", "class"] });
+        return true;
+      };
+      if (tryAttach()) return;
+      this.pollTimer = window.setInterval(() => {
+        if (tryAttach()) return;
+        if (Date.now() - start > DROPDOWN_WAIT_MS && this.pollTimer !== null) {
+          window.clearInterval(this.pollTimer);
+          this.pollTimer = null;
+        }
+      }, DROPDOWN_POLL_MS);
+    }
+  }
+  class TextFinder {
+    /**
+     * Walks up from the element under the cursor to the first ancestor that holds
+     * the translator stamps (same element as TextTarget.parent when translated).
+     * Requires both data-tl-src and data-tl-to — source-language pages stay inert.
+     */
+    static findTargetAt(element) {
+      let current = element;
+      while (current && current !== document.body && current !== document.documentElement) {
+        if (DomUtils.isNonContentElement(current)) return null;
+        if (DomUtils.shouldPreventTranslation(current)) return null;
+        const targetLanguage = current.getAttribute(ATTRIBUTES.TRANSLATED_TO);
+        const sourceText = current.getAttribute(ATTRIBUTES.SOURCE_TEXT);
+        if (targetLanguage && sourceText) {
+          return { element: current, sourceText, targetLanguage };
+        }
+        current = current.parentElement;
+      }
+      return null;
+    }
+  }
+  const queued = /* @__PURE__ */ new WeakSet();
+  const translated = /* @__PURE__ */ new WeakSet();
+  const translatedTextStore = /* @__PURE__ */ new WeakMap();
+  const translatedAttributeStore = /* @__PURE__ */ new WeakMap();
+  function setTranslatedText(node, translatedText) {
+    translatedTextStore.set(node, translatedText.trim());
+  }
+  function getTranslatedText(node) {
+    return translatedTextStore.get(node);
+  }
+  function clearTranslatedText(node) {
+    translatedTextStore.delete(node);
+  }
+  function setTranslatedAttribute(element, attribute, translatedValue) {
+    const existing = translatedAttributeStore.get(element) || /* @__PURE__ */ new Map();
+    existing.set(attribute, translatedValue.trim());
+    translatedAttributeStore.set(element, existing);
+  }
+  function getTranslatedAttribute(element, attribute) {
+    const map = translatedAttributeStore.get(element);
+    return map == null ? void 0 : map.get(attribute);
+  }
+  function clearTranslatedAttribute(element, attribute) {
+    if (!attribute) {
+      translatedAttributeStore.delete(element);
+      return;
+    }
+    const map = translatedAttributeStore.get(element);
+    if (!map) return;
+    map.delete(attribute);
+    if (map.size === 0) {
+      translatedAttributeStore.delete(element);
+    }
+  }
+  function normalizeText(text) {
+    return text.replace(/\s+/g, " ").trim();
+  }
+  function findFirstMeaningfulTextNode(parent) {
+    const walker = document.createTreeWalker(parent, NodeFilter.SHOW_TEXT, {
+      acceptNode: (node) => {
+        var _a;
+        const text = (_a = node.textContent) == null ? void 0 : _a.trim();
+        return text ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT;
+      }
+    });
+    return walker.nextNode();
+  }
+  function applyManualTranslationToParent(parentElement, sourceText, newTranslation, targetLang) {
+    var _a, _b;
+    const liveNode = findFirstMeaningfulTextNode(parentElement);
+    if (!liveNode) return;
+    if (!parentElement.hasAttribute(ATTRIBUTES.SOURCE_TEXT)) {
+      parentElement.setAttribute(ATTRIBUTES.SOURCE_TEXT, sourceText);
+    }
+    parentElement.setAttribute(ATTRIBUTES.TRANSLATION_STATE, "translated");
+    parentElement.setAttribute(ATTRIBUTES.TRANSLATED_TO, targetLang);
+    const trimmedTranslated = newTranslation.trim();
+    setTranslatedText(liveNode, trimmedTranslated);
+    if (normalizeText(sourceText) !== normalizeText(trimmedTranslated)) {
+      const leadingWs = ((_a = sourceText.match(/^\s+/)) == null ? void 0 : _a[0]) || "";
+      const trailingWs = ((_b = sourceText.match(/\s+$/)) == null ? void 0 : _b[0]) || "";
+      liveNode.textContent = `${leadingWs}${trimmedTranslated}${trailingWs}`;
+    }
+  }
+  const REPOSITION_DEBOUNCE_MS = 24;
+  class CacheEditorService {
+    constructor(apiService, configManager, theme) {
+      this.apiService = apiService;
+      this.configManager = configManager;
+      this.currentTarget = null;
+      this.repositionTimer = null;
+      this.editModeActive = false;
+      this.overlay = new CacheEditorOverlay(theme, {
+        onSave: () => this.handleSave(),
+        onCancel: () => this.handleCancel()
+      });
+      this.pill = new CacheEditorPill(theme);
+      this.pill.onToggle = (active) => this.setEditMode(active);
+      this.boundHandleMouseOver = (e) => this.handleMouseOver(e);
+      this.boundHandleMouseOut = (e) => this.handleMouseOut(e);
+      this.boundHandleClick = (e) => this.handleClick(e);
+      this.boundReposition = () => this.scheduleReposition();
+    }
+    start() {
+      this.overlay.create();
+      this.pill.mount();
+      document.addEventListener("mouseover", this.boundHandleMouseOver);
+      document.addEventListener("mouseout", this.boundHandleMouseOut);
+      document.addEventListener("click", this.boundHandleClick, true);
+      window.addEventListener("resize", this.boundReposition, true);
+      window.addEventListener("scroll", this.boundReposition, true);
+    }
+    stop() {
+      if (this.repositionTimer !== null) window.clearTimeout(this.repositionTimer);
+      document.removeEventListener("mouseover", this.boundHandleMouseOver);
+      document.removeEventListener("mouseout", this.boundHandleMouseOut);
+      document.removeEventListener("click", this.boundHandleClick, true);
+      window.removeEventListener("resize", this.boundReposition, true);
+      window.removeEventListener("scroll", this.boundReposition, true);
+      this.overlay.hidePopover();
+      this.overlay.clearHover();
+      this.pill.unmount();
+    }
+    // ─── Edit mode gate (toggled by the pill next to the language widget) ─────
+    setEditMode(active) {
+      this.editModeActive = active;
+      if (!active) {
+        if (!this.overlay.isSaving()) {
+          this.overlay.hidePopover();
+        }
+        this.overlay.clearHover();
+        this.currentTarget = null;
+      }
+    }
+    // ─── Hover — indicate only, never open ───────────────────────────────────
+    handleMouseOver(e) {
+      if (!this.editModeActive) return;
+      const element = e.target;
+      if (!element || DomUtils.isNonContentElement(element)) return;
+      const popoverId = CACHE_EDITOR_SELECTORS.POPOVER;
+      if (element.id === popoverId || element.closest(`#${popoverId}`)) return;
+      const editPillId = CACHE_EDITOR_SELECTORS.EDIT_PILL;
+      if (element.id === editPillId || element.closest(`#${editPillId}`)) return;
+      const dropdownId = SELECTORS.DROPDOWN_CONTAINER;
+      if (element.id === dropdownId || element.closest(`#${dropdownId}`)) return;
+      const target = TextFinder.findTargetAt(element);
+      if (target) {
+        this.overlay.applyHover(target.element);
+      } else {
+        this.overlay.clearHover();
+      }
+    }
+    handleMouseOut(e) {
+      var _a;
+      if (!this.editModeActive) return;
+      const related = e.relatedTarget;
+      if (related && ((_a = e.target) == null ? void 0 : _a.contains(related))) return;
+      this.overlay.clearHover();
+    }
+    // ─── Click — intercept default actions + open (or switch) popover ────────
+    handleClick(e) {
+      var _a;
+      if (!this.editModeActive) return;
+      const element = e.target;
+      if (!element) return;
+      const popoverId = CACHE_EDITOR_SELECTORS.POPOVER;
+      if (element.id === popoverId || element.closest(`#${popoverId}`)) return;
+      const editPillId = CACHE_EDITOR_SELECTORS.EDIT_PILL;
+      if (element.id === editPillId || element.closest(`#${editPillId}`)) return;
+      const dropdownId = SELECTORS.DROPDOWN_CONTAINER;
+      if (element.id === dropdownId || element.closest(`#${dropdownId}`)) return;
+      const target = TextFinder.findTargetAt(element);
+      if (!target) return;
+      e.preventDefault();
+      e.stopPropagation();
+      if (this.overlay.isSaving()) return;
+      if (this.overlay.isPopoverOpen() && ((_a = this.currentTarget) == null ? void 0 : _a.element) === target.element) return;
+      if (this.overlay.isPopoverOpen()) {
+        this.overlay.hidePopover();
+      }
+      this.currentTarget = target;
+      this.overlay.showPopover(target.element, target.sourceText);
+    }
+    // ─── Save / Cancel ────────────────────────────────────────────────────────
+    handleCancel() {
+      if (this.overlay.isSaving()) return;
+      this.overlay.revertDraft();
+      this.overlay.hidePopover();
+      this.currentTarget = null;
+    }
+    async handleSave() {
+      if (this.overlay.isSaving()) return;
+      const target = this.currentTarget;
+      if (!target) return;
+      const draft = this.overlay.getTranslationDraft().trim();
+      if (!draft) {
+        ErrorHandler.showErrorMessage("config-invalid", "Translation cannot be empty.");
+        return;
+      }
+      const translationConfig = this.configManager.getTranslationConfig();
+      const apiConfig = this.configManager.getApiConfig();
+      if (!translationConfig || !apiConfig) {
+        ErrorHandler.showErrorMessage("config-invalid", "Translation is not configured.");
+        return;
+      }
+      this.overlay.setSaving(true);
+      try {
+        await this.apiService.updateTranslationCache({
+          apiConfig,
+          sourceText: target.sourceText,
+          targetLang: target.targetLanguage,
+          value: draft
+        });
+        applyManualTranslationToParent(
+          target.element,
+          target.sourceText,
+          draft,
+          target.targetLanguage
+        );
+        this.overlay.hidePopover();
+        this.currentTarget = null;
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : "Could not save translation.";
+        let errorType = "server";
+        if (e instanceof TypeError && msg.includes("Failed to fetch")) {
+          errorType = "network";
+        } else if (msg.toLowerCase().includes("session") || msg.toLowerCase().includes("forbidden") || msg.toLowerCase().includes("not authorized")) {
+          errorType = "auth";
+        }
+        ErrorHandler.showErrorMessage(errorType, msg);
+      } finally {
+        this.overlay.setSaving(false);
+      }
+    }
+    // ─── Reposition on scroll / resize ───────────────────────────────────────
+    scheduleReposition() {
+      if (!this.overlay.isPopoverOpen() || !this.currentTarget) return;
+      if (this.repositionTimer !== null) window.clearTimeout(this.repositionTimer);
+      this.repositionTimer = window.setTimeout(() => {
+        this.repositionTimer = null;
+        if (this.currentTarget) this.overlay.reposition(this.currentTarget.element);
+      }, REPOSITION_DEBOUNCE_MS);
     }
   }
   class LanguageDropdown {
@@ -1179,8 +2089,7 @@
       }
     }
     generateCSS(theme) {
-      const baseColors = this.getBaseColors(theme);
-      const themeColors = baseColors;
+      const themeColors = getTranslatorThemeColors(theme);
       const isDark = theme === "dark";
       const thumbColor = isDark ? "rgba(255,255,255,0.35)" : "rgba(0,0,0,0.2)";
       const thumbHoverColor = isDark ? "rgba(255,255,255,0.55)" : "rgba(0,0,0,0.35)";
@@ -1354,25 +2263,6 @@
 				font-family: var(--tl-font-family, 'Inter', sans-serif);
             }
         `;
-    }
-    getBaseColors(theme) {
-      return theme === "light" ? {
-        bg: "#ffffff",
-        bgHover: "#f5f5f5",
-        color: "#333333",
-        border: "1px solid #e0e0e0",
-        shadow: "0 2px 8px rgba(0,0,0,0.1)",
-        optionBg: "#ffffff",
-        optionColor: "#333333"
-      } : {
-        bg: "#333333",
-        bgHover: "#555555",
-        color: "#ffffff",
-        border: "none",
-        shadow: "0 2px 8px rgba(0,0,0,0.3)",
-        optionBg: "#333333",
-        optionColor: "#ffffff"
-      };
     }
     capitalizeLabel(label) {
       const escapeHtml = (unsafe) => {
@@ -1606,40 +2496,6 @@
       this.restorePosition();
       document.addEventListener("click", this.handleDocumentClick);
       window.addEventListener("resize", this.handleResize);
-    }
-  }
-  const queued = /* @__PURE__ */ new WeakSet();
-  const translated = /* @__PURE__ */ new WeakSet();
-  const translatedTextStore = /* @__PURE__ */ new WeakMap();
-  const translatedAttributeStore = /* @__PURE__ */ new WeakMap();
-  function setTranslatedText(node, translatedText) {
-    translatedTextStore.set(node, translatedText.trim());
-  }
-  function getTranslatedText(node) {
-    return translatedTextStore.get(node);
-  }
-  function clearTranslatedText(node) {
-    translatedTextStore.delete(node);
-  }
-  function setTranslatedAttribute(element, attribute, translatedValue) {
-    const existing = translatedAttributeStore.get(element) || /* @__PURE__ */ new Map();
-    existing.set(attribute, translatedValue.trim());
-    translatedAttributeStore.set(element, existing);
-  }
-  function getTranslatedAttribute(element, attribute) {
-    const map = translatedAttributeStore.get(element);
-    return map == null ? void 0 : map.get(attribute);
-  }
-  function clearTranslatedAttribute(element, attribute) {
-    if (!attribute) {
-      translatedAttributeStore.delete(element);
-      return;
-    }
-    const map = translatedAttributeStore.get(element);
-    if (!map) return;
-    map.delete(attribute);
-    if (map.size === 0) {
-      translatedAttributeStore.delete(element);
     }
   }
   class TranslationObserver {
@@ -1885,12 +2741,14 @@
         let node;
         while (node = walker.nextNode()) {
           const parent = node.parentElement;
-          if (parent && parent.hasAttribute(ATTRIBUTES.SOURCE_TEXT)) {
-            textNodes.push(parent.getAttribute(ATTRIBUTES.SOURCE_TEXT));
-          } else {
-            textNodes.push(node.textContent);
-          }
-          nodeMap.set(textIndex, node);
+          if (!parent) continue;
+          const sourceText = parent.hasAttribute(ATTRIBUTES.SOURCE_TEXT) ? parent.getAttribute(ATTRIBUTES.SOURCE_TEXT) : node.textContent;
+          textNodes.push(sourceText);
+          nodeMap.set(textIndex, {
+            node,
+            parent,
+            sourceText
+          });
           textIndex++;
         }
         const elementsWithAttributes = Array.from(
@@ -1995,11 +2853,11 @@
       }
       this.activeRequests++;
       const payload = this.requestQueue.shift();
-      payload.textMap.forEach((n) => queued.add(n));
+      payload.textMap.forEach((target) => queued.add(target.node));
       payload.attributeMap.forEach(({ element }) => queued.add(element));
       this.sendFn(payload).catch((err) => {
         console.error("DebouncedSender sendFn error:", err);
-        payload.textMap.forEach((n) => queued.delete(n));
+        payload.textMap.forEach((target) => queued.delete(target.node));
         payload.attributeMap.forEach(({ element }) => queued.delete(element));
       }).finally(() => {
         this.activeRequests--;
@@ -2026,11 +2884,11 @@
         (text) => TextExtractor.isJsonString(text) || TextExtractor.isUnwantedContent(text)
       );
       textNodes.forEach((txt, localIdx) => {
-        const node = nodeMap.get(localIdx);
-        if (!node) return;
-        if (queued.has(node) || translated.has(node)) return;
+        const target = nodeMap.get(localIdx);
+        if (!target) return;
+        if (queued.has(target.node) || translated.has(target.node)) return;
         texts.push(txt);
-        textMap.set(textIdx++, node);
+        textMap.set(textIdx++, target);
       });
       elemAttrTexts.forEach((txt, localIdx) => {
         const attrInfo = elemAttrMap.get(localIdx);
@@ -2238,6 +3096,7 @@
       this.isTranslating = false;
       this.originalTitle = null;
       this.originalDescription = null;
+      this.onTranslatedPageReady = null;
       this.apiService = apiService;
       this.configManager = configManager;
       this.sender = new DebouncedSender(
@@ -2325,28 +3184,66 @@
     applyTranslatedTextNodes(translatedTexts, nodeMap, targetLang) {
       translatedTexts.forEach((translatedText, index) => {
         var _a, _b;
-        const originalNode = nodeMap.get(index);
-        if (!originalNode || !originalNode.parentElement) return;
-        const parentElement = originalNode.parentElement;
-        const originalText = parentElement.getAttribute(ATTRIBUTES.SOURCE_TEXT) || "";
+        const target = nodeMap.get(index);
+        if (!target) return;
+        const liveNode = this.resolveLiveTextTarget(target);
+        if (!liveNode || !liveNode.parentElement) return;
+        const parentElement = liveNode.parentElement;
+        const originalText = target.sourceText;
         if (!parentElement.hasAttribute(ATTRIBUTES.SOURCE_TEXT)) {
-          parentElement.setAttribute(ATTRIBUTES.SOURCE_TEXT, originalNode.textContent || "");
+          parentElement.setAttribute(ATTRIBUTES.SOURCE_TEXT, originalText);
         }
         parentElement.setAttribute(ATTRIBUTES.TRANSLATION_STATE, "translated");
         parentElement.setAttribute(ATTRIBUTES.TRANSLATED_TO, targetLang);
-        const currentSourceText = parentElement.getAttribute(ATTRIBUTES.SOURCE_TEXT) || "";
         const trimmedTranslated = translatedText.trim();
-        setTranslatedText(originalNode, trimmedTranslated);
-        if (currentSourceText.trim() !== trimmedTranslated) {
+        setTranslatedText(liveNode, trimmedTranslated);
+        if (this.normalizeText(originalText) !== this.normalizeText(trimmedTranslated)) {
           const leadingWs = ((_a = originalText.match(/^\s+/)) == null ? void 0 : _a[0]) || "";
           const trailingWs = ((_b = originalText.match(/\s+$/)) == null ? void 0 : _b[0]) || "";
-          originalNode.textContent = `${leadingWs}${trimmedTranslated}${trailingWs}`;
+          liveNode.textContent = `${leadingWs}${trimmedTranslated}${trailingWs}`;
         }
       });
       const config = this.configManager.getTranslationConfig();
       if (config) {
         DomUtils.updateCanonicalUrl(targetLang, config.defaultLang);
       }
+    }
+    resolveLiveTextTarget(target) {
+      var _a;
+      if ((_a = target.node.parentElement) == null ? void 0 : _a.isConnected) {
+        return target.node;
+      }
+      if (!target.parent.isConnected) {
+        return null;
+      }
+      const liveTextNode = this.findFirstMeaningfulTextNode(target.parent);
+      if (!liveTextNode) {
+        return null;
+      }
+      const liveText = liveTextNode.textContent || "";
+      if (this.normalizeText(liveText) !== this.normalizeText(target.sourceText)) {
+        target.parent.setAttribute(ATTRIBUTES.SOURCE_TEXT, liveText);
+        target.parent.removeAttribute(ATTRIBUTES.TRANSLATION_STATE);
+        target.parent.removeAttribute(ATTRIBUTES.TRANSLATED_TO);
+        if (!this.configManager.isInDefaultLanguage()) {
+          this.enqueue(target.parent);
+        }
+        return null;
+      }
+      return liveTextNode;
+    }
+    findFirstMeaningfulTextNode(parent) {
+      const walker = document.createTreeWalker(parent, NodeFilter.SHOW_TEXT, {
+        acceptNode: (node) => {
+          var _a;
+          const text = (_a = node.textContent) == null ? void 0 : _a.trim();
+          return text ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT;
+        }
+      });
+      return walker.nextNode();
+    }
+    normalizeText(text) {
+      return text.replace(/\s+/g, " ").trim();
     }
     async translatePage(targetLang) {
       this.abortCurrentTranslation();
@@ -2387,15 +3284,13 @@
         return;
       }
       const skeletonMap = /* @__PURE__ */ new Map();
-      nodeMap.forEach((node, _key) => {
-        const parentElement = node.parentElement;
-        if (parentElement && !parentElement.hasAttribute(ATTRIBUTES.SOURCE_TEXT)) {
-          const originalText = node.textContent || "";
-          parentElement.setAttribute(ATTRIBUTES.SOURCE_TEXT, originalText);
+      nodeMap.forEach((target, _key) => {
+        if (!target.parent.hasAttribute(ATTRIBUTES.SOURCE_TEXT)) {
+          target.parent.setAttribute(ATTRIBUTES.SOURCE_TEXT, target.sourceText);
         }
       });
-      nodeMap.forEach((node, key) => {
-        const skeleton = SkeletonManager.apply(node);
+      nodeMap.forEach((target, key) => {
+        const skeleton = SkeletonManager.apply(target.node);
         if (skeleton) {
           skeletonMap.set(key, skeleton);
         }
@@ -2489,10 +3384,9 @@
     async translateBatch(payload) {
       const { texts, textMap, attributeTexts, attributeMap } = payload;
       if (texts.length === 0 && attributeTexts.length === 0) return;
-      textMap.forEach((node, index) => {
-        const parent = node.parentElement;
-        if (parent && !parent.hasAttribute(ATTRIBUTES.SOURCE_TEXT)) {
-          parent.setAttribute(ATTRIBUTES.SOURCE_TEXT, texts[index]);
+      textMap.forEach((target, index) => {
+        if (!target.parent.hasAttribute(ATTRIBUTES.SOURCE_TEXT)) {
+          target.parent.setAttribute(ATTRIBUTES.SOURCE_TEXT, texts[index]);
         }
       });
       attributeMap.forEach(({ element, attribute }, index) => {
@@ -2501,9 +3395,8 @@
           element.setAttribute(sourceAttributeName, attributeTexts[index]);
         }
       });
-      textMap.forEach((node) => {
-        var _a;
-        (_a = node.parentElement) == null ? void 0 : _a.setAttribute(ATTRIBUTES.TRANSLATION_STATE, "translating");
+      textMap.forEach((target) => {
+        target.parent.setAttribute(ATTRIBUTES.TRANSLATION_STATE, "translating");
       });
       attributeMap.forEach(({ element }) => {
         element.setAttribute(ATTRIBUTES.TRANSLATION_STATE, "translating");
@@ -2512,9 +3405,9 @@
       const translationConfig = this.configManager.getTranslationConfig();
       if (!apiConfig || !translationConfig) return;
       if (this.configManager.isInDefaultLanguage()) {
-        textMap.forEach((n) => {
-          queued.delete(n);
-          translated.add(n);
+        textMap.forEach((target) => {
+          queued.delete(target.node);
+          translated.add(target.node);
         });
         attributeMap.forEach(({ element }) => {
           queued.delete(element);
@@ -2523,8 +3416,8 @@
         return;
       }
       const skeletonMap = /* @__PURE__ */ new Map();
-      textMap.forEach((node, key) => {
-        const skeleton = SkeletonManager.apply(node);
+      textMap.forEach((target, key) => {
+        const skeleton = SkeletonManager.apply(target.node);
         if (skeleton) {
           skeletonMap.set(key, skeleton);
         }
@@ -2551,9 +3444,9 @@
         });
         this.applyTranslatedTextNodes(translatedTexts, textMap, translateCfg.targetLanguage);
         this.applyTranslatedAttributes(translatedAttributes, attributeMap, translateCfg.targetLanguage);
-        textMap.forEach((n) => {
-          queued.delete(n);
-          translated.add(n);
+        textMap.forEach((target) => {
+          queued.delete(target.node);
+          translated.add(target.node);
         });
         attributeMap.forEach(({ element }) => {
           queued.delete(element);
@@ -2561,9 +3454,8 @@
         });
       } catch (error) {
         console.error("❌ translateBatch failed:", error);
-        textMap.forEach((node) => {
-          var _a;
-          (_a = node.parentElement) == null ? void 0 : _a.removeAttribute(ATTRIBUTES.TRANSLATION_STATE);
+        textMap.forEach((target) => {
+          target.parent.removeAttribute(ATTRIBUTES.TRANSLATION_STATE);
         });
         attributeMap.forEach(({ element }) => {
           element.removeAttribute(ATTRIBUTES.TRANSLATION_STATE);
@@ -2572,7 +3464,7 @@
       }
     }
     async switchLanguage(newLang) {
-      var _a;
+      var _a, _b;
       if (newLang === this.configManager.getCurrentLanguage()) return;
       const config = this.configManager.getTranslationConfig();
       if (!config) {
@@ -2595,6 +3487,7 @@
         applyDirection(newLang);
         this.updateLanguageDropdown(this.translatedLabels);
         this.startObserver();
+        (_b = this.onTranslatedPageReady) == null ? void 0 : _b.call(this);
       } catch (e) {
         console.error("❌ Switch language failed:", e);
         if (e instanceof Error) {
@@ -2780,6 +3673,17 @@
     const configManager = new ConfigManager(apiService, SCRIPT_CONFIG);
     const translationEngine = new TextTranslationEngine(apiService, configManager);
     await translationEngine.initialize();
+    let cacheEditor = null;
+    async function ensureCacheEditorRunning() {
+      if (cacheEditor) return;
+      if (configManager.isInDefaultLanguage()) return;
+      if (!await apiService.shouldEnableEditSession({ key: SCRIPT_CONFIG.apiKey })) return;
+      cacheEditor = new CacheEditorService(apiService, configManager, SCRIPT_CONFIG.theme);
+      cacheEditor.start();
+      window.addEventListener("beforeunload", () => cacheEditor == null ? void 0 : cacheEditor.stop());
+    }
+    await ensureCacheEditorRunning();
+    translationEngine.onTranslatedPageReady = ensureCacheEditorRunning;
   })();
 })();
 //# sourceMappingURL=translator.dev.js.map
