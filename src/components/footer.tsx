@@ -1,6 +1,29 @@
 "use client";
 import { ChefHat, MapPin } from 'lucide-react'
 
+const experienceLinks = [
+    { label: "Frühstück", href: "/breakfast" },
+    { label: "Biergarten", href: "/beer-garden" },
+    { label: "Chef-Tisch", href: "/chef-table" },
+    { label: "Weinkeller", href: "/wine-cellar" },
+    { label: "Familienessen", href: "/family-dining" },
+    { label: "Privater Salon", href: "/private-dining" },
+    { label: "Saisonale Spezialitäten", href: "/seasonal-specials" },
+    { label: "Nachspeisen", href: "/desserts" },
+    { label: "Backstube", href: "/bakery" },
+    { label: "Zum Mitnehmen", href: "/takeaway" },
+    { label: "Gutscheine", href: "/gift-cards" },
+    { label: "Stammgast-Club", href: "/loyalty-club" },
+    { label: "Live-Musik", href: "/live-music" },
+    { label: "Kochkurse", href: "/cooking-classes" },
+    { label: "Markt & Produzenten", href: "/farmers-market" },
+    { label: "Festtagsmenü", href: "/holiday-menu" },
+    { label: "Oktoberfest", href: "/oktoberfest" },
+    { label: "Geschichte", href: "/history" },
+    { label: "Team", href: "/team" },
+    { label: "Presse", href: "/press" },
+];
+
 export default function Footer() {
     return (
         <footer
@@ -134,6 +157,23 @@ export default function Footer() {
                                 </p>
                             </div>
                         </div>
+                    </div>
+                </div>
+
+                <div className="border-t border-neutral-800 mt-12 pt-8">
+                    <h4 className="text-lg font-semibold text-amber-400">
+                        Weitere Erlebnisse
+                    </h4>
+                    <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+                        {experienceLinks.map((link) => (
+                            <a
+                                key={link.href}
+                                href={link.href}
+                                className="rounded-xl border border-neutral-800 bg-white/5 px-4 py-3 text-sm text-neutral-300 transition-colors hover:border-amber-500/60 hover:text-amber-300"
+                            >
+                                {link.label}
+                            </a>
+                        ))}
                     </div>
                 </div>
 
