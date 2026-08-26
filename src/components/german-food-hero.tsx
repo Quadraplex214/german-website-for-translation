@@ -90,7 +90,9 @@ export default function GermanHeroFood() {
 
   useEffect(() => {
     if (btnLabelRef.current) {
-      btnLabelRef.current.textContent = isTranslating ? "Translating…" : "Translate";
+      btnLabelRef.current.textContent = isTranslating
+        ? "Translating…"
+        : "Translate";
     }
   }, [isTranslating]);
 
@@ -161,7 +163,16 @@ export default function GermanHeroFood() {
                   - entdecken Sie das reiche kulinarische Erbe Deutschlands
                 </motion.p>
 
-                {/* <p>CAMB.AI is the gold standard in <strong>AI-powered Localization</strong>, translating every language (150+), every nuance, every emotion, in real time.</p> */}
+                <p className="mt-4 max-w-xl text-stone-400">
+                  We started as a single cart at the Brightwater farmers market
+                  in 2014 and grew, slowly and on purpose, into a roastery and
+                  three neighborhood cafés. If you want the long version, it's
+                  on our
+                  <a href="/about" className="text-amber-400 underline">
+                    About page
+                  </a>
+                  . If you just want coffee, keep scrolling.
+                </p>
               </div>
 
               <motion.div
