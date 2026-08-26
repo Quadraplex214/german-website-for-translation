@@ -1,6 +1,5 @@
 "use client";
 
-import Navbar from "@/components/navbar";
 import { BackgroundGradient } from "@/components/ui/background-gradient";
 import { Utensils, Beer, Soup, CakeSlice, Leaf, Flame } from "lucide-react";
 import { Button } from "@/components/ui/button";

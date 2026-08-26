@@ -15,10 +15,17 @@ export const TypewriterEffect = ({
   className?: string;
   cursorClassName?: string;
 }) => {
-  const wordsArray = words.map((word) => {
+  const wordsArray = words.map((word, index, allWords) => {
     return {
       ...word,
-      text: word.text.split(""),
+      text: word.text.split("").map((char, index, chars) => ({
+        char,
+        key: chars.slice(0, index + 1).join(""),
+      })),
+      key: allWords
+        .slice(0, index + 1)
+        .map(({ text }) => text)
+        .join(" "),
     };
   });
 
@@ -39,18 +46,18 @@ export const TypewriterEffect = ({
         }
       );
     }
-  }, [isInView]);
+  }, [animate, isInView]);
 
   const renderWords = () => {
     return (
       <motion.div ref={scope} className="inline">
-        {wordsArray.map((word, idx) => {
+        {wordsArray.map((word) => {
           return (
-            <div key={`word-${idx}`} className="inline-block">
-              {word.text.map((char, index) => (
+            <div key={`word-${word.key}`} className="inline-block">
+              {word.text.map(({ char, key }) => (
                 <motion.span
                   initial={{}}
-                  key={`char-${index}`}
+                  key={key}
                   className={cn(
                     `dark:text-white text-black opacity-0 hidden`,
                     word.className

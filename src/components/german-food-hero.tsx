@@ -13,9 +13,8 @@ import {
   Utensils,
 } from "lucide-react";
 import Image from "next/image";
-import { motion, useScroll, useTransform, useInView } from "framer-motion";
+import { motion, useInView } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
-import Navbar from "./navbar";
 import { Button } from "./ui/button";
 import { toast } from "sonner";
 import { BASE_PATH } from "@/lib/basePath";
@@ -96,9 +95,6 @@ export default function GermanHeroFood() {
     }
   }, [isTranslating]);
 
-  const { scrollYProgress } = useScroll();
-  const y = useTransform(scrollYProgress, [0, 1], ["0%", "50%"]);
-
   const aboutInView = useInView(aboutRef, { once: true, margin: "-100px" });
   const menuInView = useInView(menuRef, { once: true, margin: "-100px" });
   const testimonialsInView = useInView(testimonialsRef, {
@@ -166,7 +162,7 @@ export default function GermanHeroFood() {
                 <p className="mt-4 max-w-xl text-stone-400">
                   We started as a single cart at the Brightwater farmers market
                   in 2014 and grew, slowly and on purpose, into a roastery and
-                  three neighborhood cafés. If you want the long version, it's
+                  three neighborhood cafés. If you want the long version, it&apos;s
                   on our
                   <a href="/about" className="text-amber-400 underline">
                     About page

@@ -1,6 +1,5 @@
 "use client";
 
-import Navbar from "@/components/navbar";
 import { Truck, UtensilsCrossed, Globe2, CheckCircle2 } from "lucide-react";
 import { BackgroundGradient } from "@/components/ui/background-gradient";
 

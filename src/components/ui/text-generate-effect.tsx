@@ -15,7 +15,11 @@ export const TextGenerateEffect = ({
   duration?: number;
 }) => {
   const [scope, animate] = useAnimate();
-  const wordsArray = words.split(" ");
+  const wordsArray = words.split(" ").map((word, index, allWords) => ({
+    key: allWords.slice(0, index + 1).join(" "),
+    word,
+  }));
+
   useEffect(() => {
     animate(
       "span",
@@ -28,15 +32,15 @@ export const TextGenerateEffect = ({
         delay: stagger(0.2),
       }
     );
-  }, [scope.current]);
+  }, [animate, duration, filter]);
 
   const renderWords = () => {
     return (
       <motion.div ref={scope}>
-        {wordsArray.map((word, idx) => {
+        {wordsArray.map(({ key, word }) => {
           return (
             <motion.span
-              key={word + idx}
+              key={key}
               className="dark:text-white text-black opacity-0"
               style={{
                 filter: filter ? "blur(10px)" : "none",

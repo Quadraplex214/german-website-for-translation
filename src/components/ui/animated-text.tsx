@@ -13,7 +13,10 @@ export const AnimatedText = ({
   delay?: number;
   duration?: number;
 }) => {
-  const words = text.split(" ");
+  const words = text.split(" ").map((word, index, allWords) => ({
+    key: allWords.slice(0, index + 1).join(" "),
+    word,
+  }));
 
   const container = {
     hidden: { opacity: 0 },
@@ -30,6 +33,7 @@ export const AnimatedText = ({
       transition: {
         type: "spring", // ✅ Explicitly valid type
         damping: 12,
+        duration,
         stiffness: 100,
       },
     },
@@ -39,6 +43,7 @@ export const AnimatedText = ({
       transition: {
         type: "spring", // ✅ Valid
         damping: 12,
+        duration,
         stiffness: 100,
       },
     },
@@ -52,11 +57,11 @@ export const AnimatedText = ({
       animate="visible"
       className={className}
     >
-      {words.map((word, index) => (
+      {words.map(({ key, word }) => (
         <motion.span
           variants={child}
           style={{ marginRight: "8px" }}
-          key={index}
+          key={key}
         >
           {word}
         </motion.span>
@@ -74,7 +79,10 @@ export const LetterPullUp = ({
   delay?: number;
   className?: string;
 }) => {
-  const letters = words.split("");
+  const letters = words.split("").map((letter, index, allLetters) => ({
+    key: allLetters.slice(0, index + 1).join(""),
+    letter,
+  }));
 
   const pullupVariant: Variants = {
     initial: {
@@ -93,9 +101,9 @@ export const LetterPullUp = ({
 
   return (
     <div className={cn("flex justify-center", className)}>
-      {letters.map((letter, i) => (
+      {letters.map(({ key, letter }, i) => (
         <motion.span
-          key={i}
+          key={key}
           variants={pullupVariant}
           initial="initial"
           animate="animate"
