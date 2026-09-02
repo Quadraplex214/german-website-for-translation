@@ -58,7 +58,7 @@ export default function RootLayout({
         </LanguageProvider>
         <Script
           src="/website-translation/websiteTranslate.js"
-          data-api-key="wt_d64de94d6cbc48f3_P9P-m-3r2U2v4CTQzO-nuw"
+          data-api-key="wt_1deecdf7fe444645_vDWT3IN3jMTVRdf9TjXtYA"
           data-disable-auto-browser-translation="true"
         />
       </body>
