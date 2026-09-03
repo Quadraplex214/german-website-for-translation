@@ -1,24 +1,24 @@
-(function () {
+(function() {
   "use strict";
   const API_ENDPOINTS = {
     CONFIG: "/translate/config",
     TEXT_BASED: "/translate/text-based",
     CHECK_EDIT_PERMISSION: "/translate/cache/check-edit-permission",
-    CACHE_UPDATE_ON_PAGE: "/translate/cache/update-on-page",
+    CACHE_UPDATE_ON_PAGE: "/translate/cache/update-on-page"
   };
   const SELECTORS = {
     ERROR_MESSAGE: "tl-error-message",
     DROPDOWN_CONTAINER: "tl-dropdown-container",
     DROPDOWN_STYLE: "tl-dropdown-style",
     DROPDOWN: "tl-dropdown",
-    POWERED_BY: "tl-powered-by",
+    POWERED_BY: "tl-powered-by"
   };
   const ATTRIBUTES = {
     NO_TRANSLATE: "data-no-translate",
     TRANSLATED_TO: "data-tl-to",
     SOURCE_TEXT: "data-tl-src",
     SOURCE_ATTRIBUTE_PREFIX: "data-tl-src-",
-    TRANSLATION_STATE: "data-tl-state",
+    TRANSLATION_STATE: "data-tl-state"
   };
   const TRANSLATABLE_ATTRIBUTES = [
     "title",
@@ -31,18 +31,18 @@
     "data-tip",
     "data-original-title",
     "data-hover",
-    "data-after-content",
+    "data-after-content"
   ];
   const TIMINGS = {
     ERROR_MESSAGE_DURATION: 5e3,
     SPA_NAVIGATION_DEBOUNCE: 150,
-    DYNAMIC_TRANSLATION_DEBOUNCE: 100,
+    DYNAMIC_TRANSLATION_DEBOUNCE: 100
     // ms
   };
   const LOCAL_STORAGE_KEYS = {
     DROPDOWN_POSITION: "tl-dropdown-position",
     SELECTED_LANGUAGE: "tl-selected-language",
-    SOURCE_CACHE: "tl-source-cache",
+    SOURCE_CACHE: "tl-source-cache"
   };
   const DROPDOWN_EXCLUDED_SELECTORS = [
     "[data-no-translate]",
@@ -51,26 +51,21 @@
     '[translate="no"]',
     "script",
     "style",
-    "noscript",
+    "noscript"
   ];
-  const EXCLUDED_RTL_SELECTORS = [
-    "[data-no-rtl]",
-    '[data-rtl="false"]',
-    ".noRtl",
-    ".no-rtl",
-  ];
+  const EXCLUDED_RTL_SELECTORS = ["[data-no-rtl]", '[data-rtl="false"]', ".noRtl", ".no-rtl"];
   const CACHE_EDITOR_SELECTORS = {
     POPOVER: "ce-popover",
     POPOVER_STYLE: "ce-popover-style",
     EDIT_PILL: "tl-edit-pill",
-    EDIT_PILL_STYLE: "tl-edit-pill-style",
+    EDIT_PILL_STYLE: "tl-edit-pill-style"
   };
   const CACHE_EDITOR_TIMINGS = {
-    HOVER_DEBOUNCE: 50,
+    HOVER_DEBOUNCE: 50
   };
   const EDIT_PILL_LAYOUT = {
     GAP: 8,
-    VIEWPORT_MARGIN: 8,
+    VIEWPORT_MARGIN: 8
   };
   const HARD_CODED_RTL = /* @__PURE__ */ new Set([
     "ar",
@@ -87,7 +82,7 @@
     // Sindhi
     "ug",
     // Uyghur
-    "yi",
+    "yi"
     // Yiddish
   ]);
   function isRtl(lang) {
@@ -116,7 +111,7 @@
             document.body.lang = lang;
           }
         },
-        { once: true },
+        { once: true }
       );
     }
     const styleElementId = "translator-rtl-overrides";
@@ -152,14 +147,9 @@
       errorDiv.id = SELECTORS.ERROR_MESSAGE;
       errorDiv.setAttribute("data-no-translate", "true");
       const errorDetail = this.getErrorDetail(type, details);
-      console.error(
-        `Translation Error [${type}]:`,
-        errorDetail.message,
-        details,
-      );
+      console.error(`Translation Error [${type}]:`, errorDetail.message, details);
       const errorContent = document.createElement("div");
-      errorContent.style.cssText =
-        "display: flex; flex-direction: column; gap: 8px;";
+      errorContent.style.cssText = "display: flex; flex-direction: column; gap: 8px;";
       const messageDiv = document.createElement("div");
       messageDiv.textContent = errorDetail.message;
       errorContent.appendChild(messageDiv);
@@ -185,8 +175,7 @@
         `;
       errorDiv.appendChild(errorContent);
       document.body.appendChild(errorDiv);
-      const duration =
-        errorDetail.showDuration || TIMINGS.ERROR_MESSAGE_DURATION;
+      const duration = errorDetail.showDuration || TIMINGS.ERROR_MESSAGE_DURATION;
       setTimeout(() => {
         if (errorDiv.parentNode) {
           errorDiv.remove();
@@ -197,78 +186,61 @@
       const errorMap = {
         auth: {
           type: "auth",
-          message:
-            customMessage ||
-            "🔒 Authentication failed. Please check your API key.",
+          message: customMessage || "🔒 Authentication failed. Please check your API key.",
           retryable: false,
-          showDuration: 8e3,
+          showDuration: 8e3
         },
         server: {
           type: "server",
-          message:
-            customMessage ||
-            "⚠️ Translation service temporarily unavailable. Please try again later.",
+          message: customMessage || "⚠️ Translation service temporarily unavailable. Please try again later.",
           retryable: true,
-          showDuration: 8e3,
+          showDuration: 8e3
         },
         network: {
           type: "network",
-          message:
-            customMessage ||
-            "🌐 Connection failed. Please check your internet connection.",
+          message: customMessage || "🌐 Connection failed. Please check your internet connection.",
           retryable: true,
-          showDuration: 8e3,
+          showDuration: 8e3
         },
         "rate-limit": {
           type: "rate-limit",
-          message:
-            customMessage || "⏳ Too many requests. Please try again later.",
+          message: customMessage || "⏳ Too many requests. Please try again later.",
           fallback: "Using cached translations where available.",
           retryable: true,
-          showDuration: 1e4,
+          showDuration: 1e4
         },
         "unsupported-language": {
           type: "unsupported-language",
-          message:
-            customMessage ||
-            "🌍 Language not supported. Using default language.",
+          message: customMessage || "🌍 Language not supported. Using default language.",
           retryable: false,
-          showDuration: 6e3,
+          showDuration: 6e3
         },
         "invalid-url": {
           type: "invalid-url",
-          message:
-            customMessage ||
-            "❌ Invalid URL format. Please check the URL and try again.",
+          message: customMessage || "❌ Invalid URL format. Please check the URL and try again.",
           retryable: false,
-          showDuration: 8e3,
+          showDuration: 8e3
         },
         "cache-unavailable": {
           type: "cache-unavailable",
-          message:
-            customMessage ||
-            "💾 Cache unavailable. Using direct translation service.",
+          message: customMessage || "💾 Cache unavailable. Using direct translation service.",
           fallback: "Translations may be slower than usual.",
           retryable: false,
-          showDuration: 6e3,
+          showDuration: 6e3
         },
         "config-invalid": {
           type: "config-invalid",
-          message:
-            customMessage ||
-            "⚙️ Invalid configuration. Please contact support.",
+          message: customMessage || "⚙️ Invalid configuration. Please contact support.",
           retryable: false,
-          showDuration: 1e4,
+          showDuration: 1e4
         },
         offline: {
           type: "offline",
-          message:
-            customMessage ||
-            "📡 You are offline. Using cached translations where available.",
+          message: customMessage || "📡 You are offline. Using cached translations where available.",
           fallback: "New translations unavailable until connection restored.",
           retryable: true,
-          showDuration: 6e3,
-        },
+          showDuration: 6e3
+        }
       };
       return errorMap[type] || errorMap["server"];
     }
@@ -289,13 +261,11 @@
       return detail.trim();
     }
     if (Array.isArray(detail)) {
-      const parts = detail
-        .map((item) => {
-          if (!item || typeof item !== "object") return "";
-          const msg = item.msg ?? item.message;
-          return typeof msg === "string" ? msg.trim() : "";
-        })
-        .filter(Boolean);
+      const parts = detail.map((item) => {
+        if (!item || typeof item !== "object") return "";
+        const msg = item.msg ?? item.message;
+        return typeof msg === "string" ? msg.trim() : "";
+      }).filter(Boolean);
       if (parts.length) return parts.join(" ");
     }
     if (detail && typeof detail === "object") {
@@ -315,27 +285,15 @@
     return str.replace(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`);
   }
   function snakeToCamelObject(obj) {
-    return Object.fromEntries(
-      Object.entries(obj).map(([key, value]) => [
-        snakeToCamelString(key),
-        value,
-      ]),
-    );
+    return Object.fromEntries(Object.entries(obj).map(([key, value]) => [snakeToCamelString(key), value]));
   }
   function camelToSnakeObject(obj) {
-    return Object.fromEntries(
-      Object.entries(obj).map(([key, value]) => [
-        camelToSnakeString(key),
-        value,
-      ]),
-    );
+    return Object.fromEntries(Object.entries(obj).map(([key, value]) => [camelToSnakeString(key), value]));
   }
   class ApiService {
     constructor(apiConfig, onCriticalError) {
       this.maxRetries = 3;
-      this.configApiUrl =
-        (apiConfig == null ? void 0 : apiConfig.configApiUrl) ||
-        "https://dev-website-translator.camb.ai";
+      this.configApiUrl = (apiConfig == null ? void 0 : apiConfig.configApiUrl) || "https://dev-website-translator.camb.ai";
       this.onCriticalError = onCriticalError;
     }
     getConfigApiUrl() {
@@ -348,10 +306,7 @@
       return `${this.configApiUrl}${API_ENDPOINTS.TEXT_BASED}`;
     }
     getTextBasedUrl(apiConfig) {
-      return (
-        (apiConfig == null ? void 0 : apiConfig.translateApiUrl) ??
-        this.getConfigTextBasedUrl()
-      );
+      return (apiConfig == null ? void 0 : apiConfig.translateApiUrl) ?? this.getConfigTextBasedUrl();
     }
     usesWorkerTranslate(apiConfig) {
       return Boolean(apiConfig == null ? void 0 : apiConfig.translateApiUrl);
@@ -361,7 +316,7 @@
       translateConfig,
       apiConfig,
       pageContext,
-      abortSignal,
+      abortSignal
     }) {
       try {
         const response = await fetch(this.getConfigTextBasedUrl(), {
@@ -370,17 +325,12 @@
             "Content-Type": "application/json",
             Accept: "application/json",
             Authorization: `Bearer ${apiConfig.key}`,
-            "X-Domain": apiConfig.domain,
+            "X-Domain": apiConfig.domain
           },
           body: JSON.stringify(
-            camelToSnakeObject({
-              textNodes,
-              translateConfig,
-              dropdownLabels: [],
-              pageContext,
-            }),
+            camelToSnakeObject({ textNodes, translateConfig, dropdownLabels: [], pageContext })
           ),
-          signal: abortSignal,
+          signal: abortSignal
         });
         if (!response.ok) {
           await this.handleTranslationError(response);
@@ -392,11 +342,7 @@
         }
         return true;
       } catch (error) {
-        if (
-          error instanceof Error &&
-          (error.message === "REDIS_UNAVAILABLE" ||
-            error.message === "RATE_LIMIT")
-        ) {
+        if (error instanceof Error && (error.message === "REDIS_UNAVAILABLE" || error.message === "RATE_LIMIT")) {
           return false;
         }
         throw error;
@@ -405,33 +351,24 @@
     async fetchConfig(apiKey, domain) {
       try {
         if (!apiKey || !domain) {
-          ErrorHandler.showErrorMessage(
-            "config-invalid",
-            "Invalid configuration: Missing API key or domain.",
-          );
+          ErrorHandler.showErrorMessage("config-invalid", "Invalid configuration: Missing API key or domain.");
           throw new Error("INVALID_CONFIG");
         }
         try {
           new URL(this.configApiUrl);
         } catch {
-          ErrorHandler.showErrorMessage(
-            "invalid-url",
-            "Invalid API URL format.",
-          );
+          ErrorHandler.showErrorMessage("invalid-url", "Invalid API URL format.");
           throw new Error("INVALID_URL");
         }
-        const response = await fetch(
-          `${this.configApiUrl}${API_ENDPOINTS.CONFIG}`,
-          {
-            method: "GET",
-            credentials: "omit",
-            headers: {
-              Authorization: `Bearer ${apiKey}`,
-              Origin: window.location.origin,
-              "Content-Type": "application/json",
-            },
-          },
-        );
+        const response = await fetch(`${this.configApiUrl}${API_ENDPOINTS.CONFIG}`, {
+          method: "GET",
+          credentials: "omit",
+          headers: {
+            Authorization: `Bearer ${apiKey}`,
+            Origin: window.location.origin,
+            "Content-Type": "application/json"
+          }
+        });
         if (!response.ok) {
           await this.handleConfigError(response);
           throw new Error(`HTTP error! status: ${response.status}`);
@@ -439,16 +376,13 @@
         const config = await response.json();
         const payload = config.payload || config;
         if (!payload.default_language) {
-          ErrorHandler.showErrorMessage(
-            "config-invalid",
-            "Invalid configuration: Missing default language.",
-          );
+          ErrorHandler.showErrorMessage("config-invalid", "Invalid configuration: Missing default language.");
           throw new Error("INVALID_CONFIG");
         }
         if (!payload.selected_languages) {
           ErrorHandler.showErrorMessage(
             "config-invalid",
-            "Invalid configuration: No target languages specified.",
+            "Invalid configuration: No target languages specified."
           );
           throw new Error("INVALID_CONFIG");
         }
@@ -459,20 +393,17 @@
           targetLanguages: payload.selected_languages,
           websiteId: payload.website_id,
           teamId: payload.team_id,
-          seoConfiguration: payload.seo_configuration ?? null,
+          seoConfiguration: payload.seo_configuration ?? null
         };
       } catch (e) {
         console.error("❌ Failed to fetch configuration:", e);
         if (e instanceof TypeError && e.message.includes("Failed to fetch")) {
           if (ErrorHandler.isOffline()) {
-            ErrorHandler.showErrorMessage(
-              "offline",
-              "Cannot load translation configuration while offline.",
-            );
+            ErrorHandler.showErrorMessage("offline", "Cannot load translation configuration while offline.");
           } else {
             ErrorHandler.showErrorMessage(
               "network",
-              "Failed to load translation configuration. Please check your connection.",
+              "Failed to load translation configuration. Please check your connection."
             );
           }
           throw new Error("NETWORK_ERROR");
@@ -489,40 +420,27 @@
       if (response.status === 401) {
         ErrorHandler.showErrorMessage(
           "auth",
-          errorData.error === "invalid_api_key" ? "Invalid API key" : void 0,
+          errorData.error === "invalid_api_key" ? "Invalid API key" : void 0
         );
       } else if (response.status === 403) {
         ErrorHandler.showErrorMessage(
           "auth",
-          errorData.error === "origin_not_allowed"
-            ? "Domain not authorized for this API key"
-            : void 0,
+          errorData.error === "origin_not_allowed" ? "Domain not authorized for this API key" : void 0
         );
       } else if (response.status === 404) {
         ErrorHandler.showErrorMessage(
           "server",
-          ((_a = errorData == null ? void 0 : errorData.detail) == null
-            ? void 0
-            : _a.error) === "website_not_found"
-            ? errorData.detail.message
-            : "Translation configuration not found.",
+          ((_a = errorData == null ? void 0 : errorData.detail) == null ? void 0 : _a.error) === "website_not_found" ? errorData.detail.message : "Translation configuration not found."
         );
       } else if (response.status === 429) {
         ErrorHandler.showErrorMessage(
           "rate-limit",
-          errorData.message ||
-            "You're sending requests too quickly. Please wait and try again.",
+          errorData.message || "You're sending requests too quickly. Please wait and try again."
         );
         throw new Error("RATE_LIMIT");
       } else if (response.status >= 500) {
-        if (
-          errorData.detail &&
-          errorData.detail.includes("Redis connection failed")
-        ) {
-          ErrorHandler.showErrorMessage(
-            "server",
-            "Translation service unavailable (Redis connection failed)",
-          );
+        if (errorData.detail && errorData.detail.includes("Redis connection failed")) {
+          ErrorHandler.showErrorMessage("server", "Translation service unavailable (Redis connection failed)");
           (_b = this.onCriticalError) == null ? void 0 : _b.call(this);
         } else {
           ErrorHandler.showErrorMessage("server");
@@ -537,12 +455,12 @@
       apiConfig,
       dropdownLabels,
       pageContext,
-      abortSignal,
+      abortSignal
     }) {
       if (ErrorHandler.isOffline()) {
         ErrorHandler.showErrorMessage(
           "offline",
-          "You are currently offline. Using cached translations where available.",
+          "You are currently offline. Using cached translations where available."
         );
       }
       const makeRequest = async (retryAttempt = 0) => {
@@ -550,7 +468,7 @@
           const workerTranslate = this.usesWorkerTranslate(apiConfig);
           const headers = {
             "Content-Type": "application/json",
-            Accept: "application/json",
+            Accept: "application/json"
           };
           if (!workerTranslate) {
             headers.Authorization = `Bearer ${apiConfig.key}`;
@@ -560,14 +478,9 @@
             method: "POST",
             headers,
             body: JSON.stringify(
-              camelToSnakeObject({
-                textNodes,
-                translateConfig,
-                dropdownLabels,
-                pageContext,
-              }),
+              camelToSnakeObject({ textNodes, translateConfig, dropdownLabels, pageContext })
             ),
-            signal: abortSignal,
+            signal: abortSignal
           });
           if (!response.ok) {
             await this.handleTranslationError(response);
@@ -577,7 +490,7 @@
           if (data.redis_available === false) {
             ErrorHandler.showErrorMessage(
               "cache-unavailable",
-              "Cache service temporarily unavailable. Translations may be slower. Please refresh the browser.",
+              "Cache service temporarily unavailable. Translations may be slower. Please refresh the browser."
             );
           }
           const responseBody = snakeToCamelObject(data);
@@ -586,14 +499,9 @@
           if (ApiService.isAbortError(error)) {
             throw error;
           }
-          if (
-            error instanceof TypeError &&
-            error.message.includes("Failed to fetch")
-          ) {
+          if (error instanceof TypeError && error.message.includes("Failed to fetch")) {
             if (retryAttempt < this.maxRetries) {
-              await new Promise((resolve) =>
-                setTimeout(resolve, Math.pow(2, retryAttempt) * 1e3),
-              );
+              await new Promise((resolve) => setTimeout(resolve, Math.pow(2, retryAttempt) * 1e3));
               return makeRequest(retryAttempt + 1);
             }
             if (ErrorHandler.isOffline()) {
@@ -601,16 +509,14 @@
             } else {
               ErrorHandler.showErrorMessage(
                 "network",
-                "Network connection failed. Please check your connection.",
+                "Network connection failed. Please check your connection."
               );
             }
             throw new Error("NETWORK_ERROR");
           }
           if (error instanceof Error && error.message === "RATE_LIMIT") {
             if (retryAttempt < 2) {
-              await new Promise((resolve) =>
-                setTimeout(resolve, 5e3 * (retryAttempt + 1)),
-              );
+              await new Promise((resolve) => setTimeout(resolve, 5e3 * (retryAttempt + 1)));
               return makeRequest(retryAttempt + 1);
             }
           }
@@ -626,79 +532,56 @@
       let errorCode = `HTTP_${response.status}`;
       switch (errorType) {
         case "unsupported_language":
-          ErrorHandler.showErrorMessage(
-            "unsupported-language",
-            errorDetail.message,
-          );
+          ErrorHandler.showErrorMessage("unsupported-language", errorDetail.message);
           errorCode = "UNSUPPORTED_LANGUAGE";
           break;
         case "rate_limit":
-          const retryMsg = errorDetail.from_cache_only
-            ? "Rate limit reached. Serving cached translations."
-            : "Too many requests. Please try again later.";
+          const retryMsg = errorDetail.from_cache_only ? "Rate limit reached. Serving cached translations." : "Too many requests. Please try again later.";
           ErrorHandler.showErrorMessage("rate-limit", retryMsg);
           errorCode = "RATE_LIMIT";
           break;
         case "invalid_api_key":
-          ErrorHandler.showErrorMessage(
-            "auth",
-            "Invalid API key. Please check your configuration.",
-          );
+          ErrorHandler.showErrorMessage("auth", "Invalid API key. Please check your configuration.");
           errorCode = "UNAUTHORIZED";
           break;
         case "domain_mismatch":
         case "origin_not_allowed":
-          ErrorHandler.showErrorMessage(
-            "auth",
-            "This domain is not authorized for the provided API key.",
-          );
+          ErrorHandler.showErrorMessage("auth", "This domain is not authorized for the provided API key.");
           errorCode = "FORBIDDEN";
           break;
         default:
           if (response.status === 401) {
-            ErrorHandler.showErrorMessage(
-              "auth",
-              errorDetail.message || "Authentication failed",
-            );
+            ErrorHandler.showErrorMessage("auth", errorDetail.message || "Authentication failed");
             errorCode = "UNAUTHORIZED";
           } else if (response.status === 403) {
-            ErrorHandler.showErrorMessage(
-              "auth",
-              errorDetail.message || "Access forbidden",
-            );
+            ErrorHandler.showErrorMessage("auth", errorDetail.message || "Access forbidden");
             errorCode = "FORBIDDEN";
           } else if (response.status === 404) {
             ErrorHandler.showErrorMessage(
               "server",
-              errorData.error === "website_not_found"
-                ? "Translation configuration not found."
-                : void 0,
+              errorData.error === "website_not_found" ? "Translation configuration not found." : void 0
             );
           } else if (response.status === 429) {
             ErrorHandler.showErrorMessage(
               "rate-limit",
-              errorDetail.message ||
-                "You’re sending requests too quickly. Please wait a moment and try again.",
+              errorDetail.message || "You’re sending requests too quickly. Please wait a moment and try again."
             );
             errorCode = "RATE_LIMIT";
           } else if (response.status >= 500) {
             if (errorDetail.message && errorDetail.message.includes("Redis")) {
               ErrorHandler.showErrorMessage(
                 "server",
-                "Translation service experiencing issues. Some features may be limited.",
+                "Translation service experiencing issues. Some features may be limited."
               );
               errorCode = "REDIS_UNAVAILABLE";
             } else {
-              ErrorHandler.showErrorMessage(
-                "server",
-                errorDetail.message || "Server error",
-              );
+              ErrorHandler.showErrorMessage("server", errorDetail.message || "Server error");
               errorCode = "SERVER_ERROR";
             }
           } else {
             ErrorHandler.showErrorMessage(
               "network",
-              `HTTP ${response.status}: ${errorDetail.message || "Unknown error"}`,
+              `HTTP ${response.status}: ${errorDetail.message || "Unknown error"}`
             );
             errorCode = "NETWORK_ERROR";
           }
@@ -714,7 +597,7 @@
       apiConfig,
       dropdownLabels,
       pageContext,
-      abortSignal,
+      abortSignal
     }) {
       const response = await fetch(this.getConfigTextBasedUrl(), {
         method: "POST",
@@ -722,17 +605,17 @@
           "Content-Type": "application/json",
           Accept: "application/json",
           Authorization: `Bearer ${apiConfig.key}`,
-          "X-Domain": apiConfig.domain,
+          "X-Domain": apiConfig.domain
         },
         body: JSON.stringify(
           camelToSnakeObject({
             textNodes: [],
             translateConfig,
             dropdownLabels,
-            pageContext,
-          }),
+            pageContext
+          })
         ),
-        signal: abortSignal,
+        signal: abortSignal
       });
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -742,19 +625,15 @@
     }
     async shouldEnableEditSession(apiConfig) {
       try {
-        const response = await fetch(
-          `${this.configApiUrl}${API_ENDPOINTS.CHECK_EDIT_PERMISSION}`,
-          {
-            method: "GET",
-            credentials: "include",
-            headers: {
-              Authorization: `Bearer ${apiConfig.key}`,
-              Origin:
-                typeof window !== "undefined" ? window.location.origin : "",
-              "Content-Type": "application/json",
-            },
-          },
-        );
+        const response = await fetch(`${this.configApiUrl}${API_ENDPOINTS.CHECK_EDIT_PERMISSION}`, {
+          method: "GET",
+          credentials: "include",
+          headers: {
+            Authorization: `Bearer ${apiConfig.key}`,
+            Origin: typeof window !== "undefined" ? window.location.origin : "",
+            "Content-Type": "application/json"
+          }
+        });
         if (!response.ok) {
           return false;
         }
@@ -765,27 +644,24 @@
       }
     }
     async updateTranslationCache(params) {
-      const response = await fetch(
-        `${this.configApiUrl}${API_ENDPOINTS.CACHE_UPDATE_ON_PAGE}`,
-        {
-          method: "PUT",
-          credentials: "include",
-          headers: {
-            Authorization: `Bearer ${params.apiConfig.key}`,
-            Origin: typeof window !== "undefined" ? window.location.origin : "",
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            source_text: params.sourceText,
-            target_lang: params.targetLang,
-            value: params.value,
-          }),
+      const response = await fetch(`${this.configApiUrl}${API_ENDPOINTS.CACHE_UPDATE_ON_PAGE}`, {
+        method: "PUT",
+        credentials: "include",
+        headers: {
+          Authorization: `Bearer ${params.apiConfig.key}`,
+          Origin: typeof window !== "undefined" ? window.location.origin : "",
+          "Content-Type": "application/json"
         },
-      );
+        body: JSON.stringify({
+          source_text: params.sourceText,
+          target_lang: params.targetLang,
+          value: params.value
+        })
+      });
       if (!response.ok) {
         const message = await parseHttpErrorMessage(
           response,
-          "Failed to save translation. Please try again.",
+          "Failed to save translation. Please try again."
         );
         throw new Error(message);
       }
@@ -794,25 +670,17 @@
   class StorageManager {
     static saveDropdownPosition(position) {
       try {
-        localStorage.setItem(
-          LOCAL_STORAGE_KEYS.DROPDOWN_POSITION,
-          JSON.stringify(position),
-        );
+        localStorage.setItem(LOCAL_STORAGE_KEYS.DROPDOWN_POSITION, JSON.stringify(position));
       } catch (e) {
         console.warn("Failed to save dropdown position to localStorage:", e);
       }
     }
     static loadDropdownPosition() {
       try {
-        const saved = localStorage.getItem(
-          LOCAL_STORAGE_KEYS.DROPDOWN_POSITION,
-        );
+        const saved = localStorage.getItem(LOCAL_STORAGE_KEYS.DROPDOWN_POSITION);
         if (saved) {
           const position = JSON.parse(saved);
-          if (
-            typeof position.x === "number" &&
-            typeof position.y === "number"
-          ) {
+          if (typeof position.x === "number" && typeof position.y === "number") {
             return position;
           }
         }
@@ -854,8 +722,7 @@
     }
     static getScriptConfig() {
       const tag = document.currentScript;
-      const rawDomain =
-        (tag == null ? void 0 : tag.dataset.domain) || window.location.host;
+      const rawDomain = (tag == null ? void 0 : tag.dataset.domain) || window.location.host;
       const domain = DomUtils.normalizeDomain(rawDomain);
       const apiKey = (tag == null ? void 0 : tag.dataset.apiKey) || "";
       return { apiKey, domain };
@@ -889,9 +756,7 @@
     }
     static isNonContentElement(element) {
       const tagName = element.tagName;
-      return (
-        tagName === "SCRIPT" || tagName === "STYLE" || tagName === "NOSCRIPT"
-      );
+      return tagName === "SCRIPT" || tagName === "STYLE" || tagName === "NOSCRIPT";
     }
     static escapeHtml(str) {
       const htmlEscapes = {
@@ -900,7 +765,7 @@
         ">": "&gt;",
         '"': "&quot;",
         "'": "&#x27;",
-        "/": "&#x2F;",
+        "/": "&#x2F;"
       };
       return str.replace(/[&<>"'/]/g, (char) => htmlEscapes[char] || char);
     }
@@ -911,19 +776,11 @@
         document.head.appendChild(testStyle);
         document.head.removeChild(testStyle);
       } catch (e) {
-        console.warn(
-          "⚠️ CSP may block inline styles needed for translation dropdown",
-        );
+        console.warn("⚠️ CSP may block inline styles needed for translation dropdown");
       }
       document.addEventListener("securitypolicyviolation", (e) => {
-        if (
-          e.violatedDirective.includes("script-src") ||
-          e.violatedDirective.includes("style-src") ||
-          e.violatedDirective.includes("connect-src")
-        ) {
-          console.warn(
-            `⚠️ CSP violation detected: ${e.violatedDirective} - Translation features may be limited`,
-          );
+        if (e.violatedDirective.includes("script-src") || e.violatedDirective.includes("style-src") || e.violatedDirective.includes("connect-src")) {
+          console.warn(`⚠️ CSP violation detected: ${e.violatedDirective} - Translation features may be limited`);
         }
       });
     }
@@ -963,11 +820,7 @@
         obs.disconnect();
         resolve();
       }
-      obs.observe(root, {
-        childList: true,
-        subtree: true,
-        characterData: true,
-      });
+      obs.observe(root, { childList: true, subtree: true, characterData: true });
       const hardStop = window.setTimeout(() => {
         obs.disconnect();
         resolve();
@@ -980,10 +833,7 @@
   }
   function normalizeHost(host) {
     var _a;
-    const lower =
-      ((_a = host.trim().toLowerCase().split(":")[0]) == null
-        ? void 0
-        : _a.split("/")[0]) ?? "";
+    const lower = ((_a = host.trim().toLowerCase().split(":")[0]) == null ? void 0 : _a.split("/")[0]) ?? "";
     return lower.startsWith("www.") ? lower.slice(4) : lower;
   }
   function firstPathSegment(pathname) {
@@ -1007,22 +857,40 @@
     const base = normalizeHost(domain);
     return Boolean(host && base && (host === base || host === `www.${base}`));
   }
+  function hostnameMatchesSeoConfiguration(hostname, seoConfiguration) {
+    var _a;
+    if (!((_a = seoConfiguration == null ? void 0 : seoConfiguration.domains) == null ? void 0 : _a.length)) {
+      return false;
+    }
+    const host = normalizeHost(hostname);
+    if (!host) {
+      return false;
+    }
+    for (const domainEntry of seoConfiguration.domains) {
+      const base = normalizeHost(domainEntry.domain);
+      if (!base) {
+        continue;
+      }
+      if (host === base || host === `www.${base}`) {
+        return true;
+      }
+      if (domainEntry.routing_mode === "subdomain") {
+        for (const route of domainEntry.routes) {
+          if (host === `${route.slug.toLowerCase()}.${base}`) {
+            return true;
+          }
+        }
+      }
+    }
+    return false;
+  }
   function isLocalDevHost(hostname) {
     const host = normalizeHost(hostname);
-    return (
-      host === "localhost" ||
-      host === "127.0.0.1" ||
-      host.endsWith(".localhost")
-    );
+    return host === "localhost" || host === "127.0.0.1" || host.endsWith(".localhost");
   }
   function hasActiveSeoConfiguration(seoConfiguration) {
     var _a;
-    if (
-      !((_a = seoConfiguration == null ? void 0 : seoConfiguration.domains) ==
-      null
-        ? void 0
-        : _a.length)
-    ) {
+    if (!((_a = seoConfiguration == null ? void 0 : seoConfiguration.domains) == null ? void 0 : _a.length)) {
       return false;
     }
     return seoConfiguration.domains.some((domain) => {
@@ -1056,28 +924,20 @@
             pageLang: route.locale,
             slug: route.slug,
             matchedDomain: domain,
-            matchedRoute: route,
+            matchedRoute: route
           };
         }
       }
     }
     return { mode: "source" };
   }
-  function parseSubdirectoryLanguage(
-    pathname,
-    requestHost,
-    seoConfiguration,
-    defaultLang,
-  ) {
+  function parseSubdirectoryLanguage(pathname, requestHost, seoConfiguration, defaultLang) {
     const segment = firstPathSegment(pathname);
     if (!segment) {
       return { mode: "source" };
     }
     for (const domain of seoConfiguration.domains) {
-      if (
-        domain.routing_mode !== "subdirectory" ||
-        !subdirectoryDomainIsRoutable(domain)
-      ) {
+      if (domain.routing_mode !== "subdirectory" || !subdirectoryDomainIsRoutable(domain)) {
         continue;
       }
       if (!isDomainRequestHost(requestHost, domain.domain)) {
@@ -1092,36 +952,21 @@
         pageLang: route.locale,
         slug: route.slug,
         matchedDomain: domain,
-        matchedRoute: route,
+        matchedRoute: route
       };
     }
     return { mode: "source" };
   }
   function resolveSeoContext(args) {
     var _a, _b;
-    if (
-      isLocalDevHost(args.hostname) ||
-      !((_b = (_a = args.seoConfiguration) == null ? void 0 : _a.domains) ==
-      null
-        ? void 0
-        : _b.length)
-    ) {
+    if (isLocalDevHost(args.hostname) || !((_b = (_a = args.seoConfiguration) == null ? void 0 : _a.domains) == null ? void 0 : _b.length)) {
       return { mode: "source" };
     }
-    const subdomain = parseSubdomainLanguage(
-      args.hostname,
-      args.seoConfiguration,
-      args.defaultLang,
-    );
+    const subdomain = parseSubdomainLanguage(args.hostname, args.seoConfiguration, args.defaultLang);
     if (subdomain.mode === "subdomain") {
       return subdomain;
     }
-    return parseSubdirectoryLanguage(
-      args.pathname,
-      args.hostname,
-      args.seoConfiguration,
-      args.defaultLang,
-    );
+    return parseSubdirectoryLanguage(args.pathname, args.hostname, args.seoConfiguration, args.defaultLang);
   }
   function stripSubdirectoryPrefix(pathname, slug) {
     if (!slug) {
@@ -1135,10 +980,7 @@
     return pathname || "/";
   }
   function findRouteForLocaleInDomain(domain, locale) {
-    if (
-      domain.routing_mode === "subdirectory" &&
-      !subdirectoryDomainIsRoutable(domain)
-    ) {
+    if (domain.routing_mode === "subdirectory" && !subdirectoryDomainIsRoutable(domain)) {
       return null;
     }
     for (const route of domain.routes) {
@@ -1169,48 +1011,29 @@
       seoConfiguration: args.seoConfiguration,
       defaultLang: args.defaultLang,
       hostname: args.currentUrl.hostname,
-      pathname: args.currentUrl.pathname,
+      pathname: args.currentUrl.pathname
     });
-    const originPath =
-      currentContext.mode === "subdirectory"
-        ? stripSubdirectoryPrefix(args.currentUrl.pathname, currentContext.slug)
-        : args.currentUrl.pathname;
+    const originPath = currentContext.mode === "subdirectory" ? stripSubdirectoryPrefix(args.currentUrl.pathname, currentContext.slug) : args.currentUrl.pathname;
     if (args.targetLocale === args.defaultLang) {
-      const url2 = new URL(
-        originPath + args.currentUrl.search + args.currentUrl.hash,
-        args.currentUrl.origin,
-      );
+      const url2 = new URL(originPath + args.currentUrl.search + args.currentUrl.hash, args.currentUrl.origin);
       if (currentContext.mode === "subdomain" && currentContext.matchedDomain) {
         url2.hostname = currentContext.matchedDomain.domain;
       }
       return url2.toString();
     }
-    const match =
-      (currentContext.matchedDomain
-        ? findRouteForLocaleInDomain(
-            currentContext.matchedDomain,
-            args.targetLocale,
-          )
-        : null) ?? findRouteForLocale(args.seoConfiguration, args.targetLocale);
+    const match = (currentContext.matchedDomain ? findRouteForLocaleInDomain(currentContext.matchedDomain, args.targetLocale) : null) ?? findRouteForLocale(args.seoConfiguration, args.targetLocale);
     if (!match) {
       return null;
     }
     const { domain, route } = match;
     if (domain.routing_mode === "subdomain") {
       const baseDomain = normalizeHost(domain.domain);
-      const url2 = new URL(
-        originPath + args.currentUrl.search + args.currentUrl.hash,
-        args.currentUrl.origin,
-      );
+      const url2 = new URL(originPath + args.currentUrl.search + args.currentUrl.hash, args.currentUrl.origin);
       url2.hostname = `${route.slug.toLowerCase()}.${baseDomain}`;
       return url2.toString();
     }
-    const prefixedPath =
-      originPath === "/" ? `/${route.slug}` : `/${route.slug}${originPath}`;
-    const url = new URL(
-      prefixedPath + args.currentUrl.search + args.currentUrl.hash,
-      args.currentUrl.origin,
-    );
+    const prefixedPath = originPath === "/" ? `/${route.slug}` : `/${route.slug}${originPath}`;
+    const url = new URL(prefixedPath + args.currentUrl.search + args.currentUrl.hash, args.currentUrl.origin);
     url.hostname = normalizeHost(domain.domain);
     return url.toString();
   }
@@ -1227,12 +1050,13 @@
     if (!activeDomain) {
       return "legacy";
     }
-    return activeDomain.routing_mode === "subdirectory"
-      ? "subdirectory-seo"
-      : "subdomain-seo";
+    return activeDomain.routing_mode === "subdirectory" ? "subdirectory-seo" : "subdomain-seo";
   }
   function usesSeoRouting(seoConfiguration) {
     return resolveEmbedRoutingMode(seoConfiguration) !== "legacy";
+  }
+  function shouldUseWorkerTranslate(seoConfiguration, hostname) {
+    return usesSeoRouting(seoConfiguration) && hostnameMatchesSeoConfiguration(hostname, seoConfiguration);
   }
   const WORKER_TRANSLATE_PATH = "/__camb__/translate/text-based";
   function resolveWorkerTranslateUrl() {
@@ -1249,24 +1073,15 @@
     return null;
   }
   function resolveLanguageFromPreferences(args) {
-    if (
-      args.savedLang &&
-      (args.targetLanguages.includes(args.savedLang) ||
-        args.savedLang === args.defaultLang)
-    ) {
+    if (args.savedLang && (args.targetLanguages.includes(args.savedLang) || args.savedLang === args.defaultLang)) {
       return args.savedLang;
     }
     if (!args.disableAutoBrowserTranslation && args.browserLang) {
-      if (
-        args.browserLang !== args.defaultLang &&
-        args.targetLanguages.includes(args.browserLang)
-      ) {
+      if (args.browserLang !== args.defaultLang && args.targetLanguages.includes(args.browserLang)) {
         return args.browserLang;
       }
       const matchingLang = args.targetLanguages.find(
-        (lang) =>
-          args.browserLang.startsWith(lang) ||
-          lang.startsWith(args.browserLang),
+        (lang) => args.browserLang.startsWith(lang) || lang.startsWith(args.browserLang)
       );
       if (matchingLang) {
         return matchingLang;
@@ -1279,7 +1094,7 @@
       seoConfiguration: args.seoConfiguration,
       defaultLang: args.defaultLang,
       hostname: args.hostname,
-      pathname: args.pathname,
+      pathname: args.pathname
     });
     if (usesSeoRouting(args.seoConfiguration)) {
       if (seoContext.mode !== "source" && seoContext.pageLang) {
@@ -1296,7 +1111,7 @@
       this.state = {
         translationConfig: null,
         apiConfig: null,
-        currentLang: "en",
+        currentLang: "en"
       };
       this.seoContext = { mode: "source" };
     }
@@ -1318,13 +1133,13 @@
         seoConfiguration: translationConfig.seoConfiguration,
         defaultLang: translationConfig.defaultLang,
         hostname: window.location.hostname,
-        pathname: window.location.pathname,
+        pathname: window.location.pathname
       });
       const urlLanguage = resolveLanguageFromSeoUrl({
         seoConfiguration: translationConfig.seoConfiguration,
         defaultLang: translationConfig.defaultLang,
         hostname: window.location.hostname,
-        pathname: window.location.pathname,
+        pathname: window.location.pathname
       });
       if (urlLanguage) {
         this.setCurrentLanguage(urlLanguage, { persist: true });
@@ -1349,25 +1164,24 @@
             domain: config.domain,
             websiteId: config.websiteId,
             teamId: config.teamId,
-            seoConfiguration: config.seoConfiguration ?? null,
+            seoConfiguration: config.seoConfiguration ?? null
           };
           const configApiUrl = this.apiService.getConfigApiUrl();
           this.seoContext = resolveSeoContext({
             seoConfiguration: translationConfig.seoConfiguration,
             defaultLang: translationConfig.defaultLang,
             hostname: window.location.hostname,
-            pathname: window.location.pathname,
+            pathname: window.location.pathname
           });
-          const translateApiUrl = usesSeoRouting(
+          const translateApiUrl = shouldUseWorkerTranslate(
             translationConfig.seoConfiguration,
-          )
-            ? (resolveWorkerTranslateUrl() ?? void 0)
-            : void 0;
+            window.location.hostname
+          ) ? resolveWorkerTranslateUrl() ?? void 0 : void 0;
           const apiConfig = {
             key: apiKey,
             domain: translationConfig.domain,
             configApiUrl,
-            translateApiUrl,
+            translateApiUrl
           };
           const initialLang = resolveInitialLanguage({
             seoConfiguration: translationConfig.seoConfiguration,
@@ -1375,20 +1189,16 @@
             targetLanguages: translationConfig.targetLanguages,
             savedLang: StorageManager.loadSelectedLanguage(),
             browserLang: DomUtils.getBrowserLanguage(),
-            disableAutoBrowserTranslation:
-              this.scriptConfig.disableAutoBrowserTranslation === true,
+            disableAutoBrowserTranslation: this.scriptConfig.disableAutoBrowserTranslation === true,
             hostname: window.location.hostname,
-            pathname: window.location.pathname,
+            pathname: window.location.pathname
           });
           this.updateState({
             translationConfig,
             apiConfig,
-            currentLang: initialLang,
+            currentLang: initialLang
           });
-          if (
-            usesSeoRouting(translationConfig.seoConfiguration) &&
-            this.seoContext.mode !== "source"
-          ) {
+          if (usesSeoRouting(translationConfig.seoConfiguration) && this.seoContext.mode !== "source") {
             StorageManager.saveSelectedLanguage(initialLang);
           }
           return translationConfig;
@@ -1399,18 +1209,16 @@
             break;
           }
           console.warn(
-            `⚠️ Config fetch attempt ${retryCount} failed: ${e.message}. Retrying in ${delay}ms...`,
+            `⚠️ Config fetch attempt ${retryCount} failed: ${e.message}. Retrying in ${delay}ms...`
           );
           await new Promise((resolve) => setTimeout(resolve, delay));
           delay = Math.min(delay * 2, 4e3);
         }
       }
-      console.error(
-        "❌ Failed to initialize translation script after all retries",
-      );
+      console.error("❌ Failed to initialize translation script after all retries");
       this.updateState({
         translationConfig: null,
-        apiConfig: null,
+        apiConfig: null
       });
       return null;
     }
@@ -1431,32 +1239,27 @@
     }
     isInDefaultLanguage() {
       var _a;
-      return (
-        this.state.currentLang ===
-        ((_a = this.state.translationConfig) == null ? void 0 : _a.defaultLang)
-      );
+      return this.state.currentLang === ((_a = this.state.translationConfig) == null ? void 0 : _a.defaultLang);
     }
   }
   function getTranslatorThemeColors(theme) {
-    return theme === "light"
-      ? {
-          bg: "#ffffff",
-          bgHover: "#f5f5f5",
-          color: "#333333",
-          border: "1px solid #e0e0e0",
-          shadow: "0 2px 8px rgba(0,0,0,0.1)",
-          optionBg: "#ffffff",
-          optionColor: "#333333",
-        }
-      : {
-          bg: "#333333",
-          bgHover: "#555555",
-          color: "#ffffff",
-          border: "none",
-          shadow: "0 2px 8px rgba(0,0,0,0.3)",
-          optionBg: "#333333",
-          optionColor: "#ffffff",
-        };
+    return theme === "light" ? {
+      bg: "#ffffff",
+      bgHover: "#f5f5f5",
+      color: "#333333",
+      border: "1px solid #e0e0e0",
+      shadow: "0 2px 8px rgba(0,0,0,0.1)",
+      optionBg: "#ffffff",
+      optionColor: "#333333"
+    } : {
+      bg: "#333333",
+      bgHover: "#555555",
+      color: "#ffffff",
+      border: "none",
+      shadow: "0 2px 8px rgba(0,0,0,0.3)",
+      optionBg: "#333333",
+      optionColor: "#ffffff"
+    };
   }
   const POPOVER_OFFSET = 8;
   const BTN_SECONDARY_BG = "#353535";
@@ -1487,20 +1290,14 @@
       this.boundDocPointerDown = (e) => this.onDocumentPointerDown(e);
     }
     create() {
-      const existing = document.getElementById(
-        CACHE_EDITOR_SELECTORS.POPOVER_STYLE,
-      );
+      const existing = document.getElementById(CACHE_EDITOR_SELECTORS.POPOVER_STYLE);
       if (existing) existing.remove();
       const t = getTranslatorThemeColors(this.theme);
       const isDark = this.theme === "dark";
       const fieldBg = isDark ? "rgba(255,255,255,0.06)" : "#f5f5f5";
-      const fieldBorder = isDark
-        ? "1px solid rgba(255,255,255,0.12)"
-        : "1px solid #e0e0e0";
+      const fieldBorder = isDark ? "1px solid rgba(255,255,255,0.12)" : "1px solid #e0e0e0";
       const muted = isDark ? "rgba(255,255,255,0.55)" : "#666666";
-      const headerBorder = isDark
-        ? "1px solid rgba(255,255,255,0.1)"
-        : "1px solid #e8e8e8";
+      const headerBorder = isDark ? "1px solid rgba(255,255,255,0.1)" : "1px solid #e8e8e8";
       const style = document.createElement("style");
       style.id = CACHE_EDITOR_SELECTORS.POPOVER_STYLE;
       style.textContent = `
@@ -1710,14 +1507,11 @@
       if (this.cancelBtn) this.cancelBtn.disabled = saving;
       if (this.closeBtn) this.closeBtn.disabled = saving;
       if (this.translationField) this.translationField.disabled = saving;
-      (_a = this.popover) == null
-        ? void 0
-        : _a.classList.toggle("ce-popover--locked", saving);
+      (_a = this.popover) == null ? void 0 : _a.classList.toggle("ce-popover--locked", saving);
     }
     /** Restore translation field to the value it had when the popover opened. */
     revertDraft() {
-      if (this.translationField)
-        this.translationField.value = this.draftSnapshot;
+      if (this.translationField) this.translationField.value = this.draftSnapshot;
     }
     // ─── Hover indicator (no popover) ────────────────────────────────────────
     // Inline styles with 'important' are used so site-CSS specificity wars
@@ -1728,11 +1522,7 @@
       this.clearHover();
       this.hoveredElement = element;
       const color = `var(--tl-bg, ${this.themeColors.bg})`;
-      element.style.setProperty(
-        "outline",
-        `1.5px dashed ${color}`,
-        "important",
-      );
+      element.style.setProperty("outline", `1.5px dashed ${color}`, "important");
       element.style.setProperty("outline-offset", "2px", "important");
       element.style.setProperty("cursor", "text", "important");
     }
@@ -1763,20 +1553,14 @@
     showPopover(anchorElement, sourceText) {
       this.ensurePopover();
       if (!this.popover || !this.sourceField || !this.translationField) return;
-      const rawInitial = Array.from(anchorElement.childNodes)
-        .filter((n) => n.nodeType === Node.TEXT_NODE)
-        .map((n) => n.textContent ?? "")
-        .join("");
+      const rawInitial = Array.from(anchorElement.childNodes).filter((n) => n.nodeType === Node.TEXT_NODE).map((n) => n.textContent ?? "").join("");
       const displaySource = sourceText.trim();
       const initial = rawInitial.trim();
       this.sourceField.value = displaySource;
       this.translationField.value = initial;
       this.draftSnapshot = initial;
       this.sourceField.rows = estimateTextareaRows(displaySource, 14);
-      this.translationField.rows = Math.max(
-        3,
-        estimateTextareaRows(initial || " ", 12),
-      );
+      this.translationField.rows = Math.max(3, estimateTextareaRows(initial || " ", 12));
       this.highlightElement(anchorElement);
       this.popover.style.display = "block";
       this.popover.classList.remove("ce-popover--visible");
@@ -1789,9 +1573,7 @@
           if (!this.popover) return;
           this.positionPopover(anchorElement);
           this.popover.classList.add("ce-popover--visible");
-          (_a = this.translationField) == null
-            ? void 0
-            : _a.focus({ preventScroll: true });
+          (_a = this.translationField) == null ? void 0 : _a.focus({ preventScroll: true });
         });
       });
     }
@@ -1804,8 +1586,7 @@
       this.popoverOpen = false;
       this.clearHighlight();
       this.anchorElement = null;
-      if (this.hideTransitionTimer !== null)
-        window.clearTimeout(this.hideTransitionTimer);
+      if (this.hideTransitionTimer !== null) window.clearTimeout(this.hideTransitionTimer);
       this.hideTransitionTimer = window.setTimeout(() => {
         this.hideTransitionTimer = null;
         if (this.popover && !this.popoverOpen) {
@@ -1858,21 +1639,15 @@
             </div>
         `;
       this.closeBtn = popover.querySelector(".ce-close");
-      (_a = this.closeBtn) == null
-        ? void 0
-        : _a.addEventListener("click", () => {
-            if (!this.saving) this.actions.onCancel();
-          });
+      (_a = this.closeBtn) == null ? void 0 : _a.addEventListener("click", () => {
+        if (!this.saving) this.actions.onCancel();
+      });
       this.cancelBtn = popover.querySelector(".ce-cancel");
       this.saveBtn = popover.querySelector(".ce-save");
-      (_b = this.cancelBtn) == null
-        ? void 0
-        : _b.addEventListener("click", () => {
-            if (!this.saving) this.actions.onCancel();
-          });
-      (_c = this.saveBtn) == null
-        ? void 0
-        : _c.addEventListener("click", () => void this.actions.onSave());
+      (_b = this.cancelBtn) == null ? void 0 : _b.addEventListener("click", () => {
+        if (!this.saving) this.actions.onCancel();
+      });
+      (_c = this.saveBtn) == null ? void 0 : _c.addEventListener("click", () => void this.actions.onSave());
       document.body.appendChild(popover);
       this.popover = popover;
       this.sourceField = popover.querySelector(".ce-source");
@@ -1900,11 +1675,7 @@
       if (top < margin) {
         top = margin;
       }
-      const overlapsAnchor =
-        left < rect.right + margin &&
-        left + popW > rect.left - margin &&
-        top < rect.bottom + margin &&
-        top + popH > rect.top - margin;
+      const overlapsAnchor = left < rect.right + margin && left + popW > rect.left - margin && top < rect.bottom + margin && top + popH > rect.top - margin;
       if (overlapsAnchor) {
         const below = rect.bottom + margin;
         if (below + popH <= vh - margin) {
@@ -1960,19 +1731,10 @@
       this.resizeObserver = null;
       window.removeEventListener("resize", this.boundSyncPosition);
       window.removeEventListener("scroll", this.boundSyncPosition, true);
-      (_c = window.visualViewport) == null
-        ? void 0
-        : _c.removeEventListener("resize", this.boundSyncPosition);
-      (_d = window.visualViewport) == null
-        ? void 0
-        : _d.removeEventListener("scroll", this.boundSyncPosition);
-      (_e = document.getElementById(CACHE_EDITOR_SELECTORS.EDIT_PILL_STYLE)) ==
-      null
-        ? void 0
-        : _e.remove();
-      (_f = document.getElementById(CACHE_EDITOR_SELECTORS.EDIT_PILL)) == null
-        ? void 0
-        : _f.remove();
+      (_c = window.visualViewport) == null ? void 0 : _c.removeEventListener("resize", this.boundSyncPosition);
+      (_d = window.visualViewport) == null ? void 0 : _d.removeEventListener("scroll", this.boundSyncPosition);
+      (_e = document.getElementById(CACHE_EDITOR_SELECTORS.EDIT_PILL_STYLE)) == null ? void 0 : _e.remove();
+      (_f = document.getElementById(CACHE_EDITOR_SELECTORS.EDIT_PILL)) == null ? void 0 : _f.remove();
       this.active = false;
     }
     injectStyles() {
@@ -2037,10 +1799,7 @@
         var _a;
         e.stopPropagation();
         this.active = !this.active;
-        pill.classList.toggle(
-          `${CACHE_EDITOR_SELECTORS.EDIT_PILL}--active`,
-          this.active,
-        );
+        pill.classList.toggle(`${CACHE_EDITOR_SELECTORS.EDIT_PILL}--active`, this.active);
         pill.setAttribute("aria-pressed", String(this.active));
         pill.innerHTML = this.active ? CLOSE_SVG : PENCIL_SVG;
         (_a = this.onToggle) == null ? void 0 : _a.call(this, this.active);
@@ -2076,8 +1835,7 @@
       if (!drop) return;
       const rect = drop.getBoundingClientRect();
       const h = rect.height > 0 ? rect.height : DEFAULT_PILL_SIZE;
-      const minTop =
-        EDIT_PILL_LAYOUT.VIEWPORT_MARGIN + EDIT_PILL_LAYOUT.GAP + h;
+      const minTop = EDIT_PILL_LAYOUT.VIEWPORT_MARGIN + EDIT_PILL_LAYOUT.GAP + h;
       if (rect.top >= minTop) return;
       const delta = minTop - rect.top;
       const inlineTop = drop.style.top;
@@ -2115,17 +1873,10 @@
         this.syncPosition();
         window.addEventListener("resize", this.boundSyncPosition);
         window.addEventListener("scroll", this.boundSyncPosition, true);
-        (_a = window.visualViewport) == null
-          ? void 0
-          : _a.addEventListener("resize", this.boundSyncPosition);
-        (_b = window.visualViewport) == null
-          ? void 0
-          : _b.addEventListener("scroll", this.boundSyncPosition);
+        (_a = window.visualViewport) == null ? void 0 : _a.addEventListener("resize", this.boundSyncPosition);
+        (_b = window.visualViewport) == null ? void 0 : _b.addEventListener("scroll", this.boundSyncPosition);
         this.dropdownObserver = new MutationObserver(() => this.syncPosition());
-        this.dropdownObserver.observe(drop, {
-          attributes: true,
-          attributeFilter: ["style", "class"],
-        });
+        this.dropdownObserver.observe(drop, { attributes: true, attributeFilter: ["style", "class"] });
         (_c = this.resizeObserver) == null ? void 0 : _c.disconnect();
         this.resizeObserver = new ResizeObserver(() => this.syncPosition());
         this.resizeObserver.observe(drop);
@@ -2149,11 +1900,7 @@
      */
     static findTargetAt(element) {
       let current = element;
-      while (
-        current &&
-        current !== document.body &&
-        current !== document.documentElement
-      ) {
+      while (current && current !== document.body && current !== document.documentElement) {
         if (DomUtils.isNonContentElement(current)) return null;
         const targetLanguage = current.getAttribute(ATTRIBUTES.TRANSLATED_TO);
         const sourceText = current.getAttribute(ATTRIBUTES.SOURCE_TEXT);
@@ -2179,8 +1926,7 @@
     translatedTextStore.delete(node);
   }
   function setTranslatedAttribute(element, attribute, translatedValue) {
-    const existing =
-      translatedAttributeStore.get(element) || /* @__PURE__ */ new Map();
+    const existing = translatedAttributeStore.get(element) || /* @__PURE__ */ new Map();
     existing.set(attribute, translatedValue.trim());
     translatedAttributeStore.set(element, existing);
   }
@@ -2206,16 +1952,11 @@
         var _a;
         const text = (_a = node.textContent) == null ? void 0 : _a.trim();
         return text ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT;
-      },
+      }
     });
     return walker.nextNode();
   }
-  function applyManualTranslationToParent(
-    parentElement,
-    sourceText,
-    newTranslation,
-    targetLang,
-  ) {
+  function applyManualTranslationToParent(parentElement, sourceText, newTranslation, targetLang) {
     var _a, _b;
     const liveNode = findFirstMeaningfulTextNode(parentElement);
     if (!liveNode) return;
@@ -2226,10 +1967,8 @@
     parentElement.setAttribute(ATTRIBUTES.TRANSLATED_TO, targetLang);
     const trimmedTranslated = newTranslation.trim();
     setTranslatedText(liveNode, trimmedTranslated);
-    const leadingWs =
-      ((_a = sourceText.match(/^\s+/)) == null ? void 0 : _a[0]) || "";
-    const trailingWs =
-      ((_b = sourceText.match(/\s+$/)) == null ? void 0 : _b[0]) || "";
+    const leadingWs = ((_a = sourceText.match(/^\s+/)) == null ? void 0 : _a[0]) || "";
+    const trailingWs = ((_b = sourceText.match(/\s+$/)) == null ? void 0 : _b[0]) || "";
     liveNode.textContent = `${leadingWs}${trimmedTranslated}${trailingWs}`;
   }
   const REPOSITION_DEBOUNCE_MS = 24;
@@ -2243,7 +1982,7 @@
       this.editModeActive = false;
       this.overlay = new CacheEditorOverlay(theme, {
         onSave: () => this.handleSave(),
-        onCancel: () => this.handleCancel(),
+        onCancel: () => this.handleCancel()
       });
       this.pill = new CacheEditorPill(theme);
       this.pill.onToggle = (active) => this.setEditMode(active);
@@ -2262,10 +2001,8 @@
       window.addEventListener("scroll", this.boundReposition, true);
     }
     stop() {
-      if (this.repositionTimer !== null)
-        window.clearTimeout(this.repositionTimer);
-      if (this.hoverDebounceTimer !== null)
-        window.clearTimeout(this.hoverDebounceTimer);
+      if (this.repositionTimer !== null) window.clearTimeout(this.repositionTimer);
+      if (this.hoverDebounceTimer !== null) window.clearTimeout(this.hoverDebounceTimer);
       document.removeEventListener("mouseover", this.boundHandleMouseOver);
       document.removeEventListener("mouseout", this.boundHandleMouseOut);
       document.removeEventListener("click", this.boundHandleClick, true);
@@ -2294,15 +2031,12 @@
       const popoverId = CACHE_EDITOR_SELECTORS.POPOVER;
       if (element.id === popoverId || element.closest(`#${popoverId}`)) return;
       const editPillId = CACHE_EDITOR_SELECTORS.EDIT_PILL;
-      if (element.id === editPillId || element.closest(`#${editPillId}`))
-        return;
+      if (element.id === editPillId || element.closest(`#${editPillId}`)) return;
       const dropdownId = SELECTORS.DROPDOWN_CONTAINER;
-      if (element.id === dropdownId || element.closest(`#${dropdownId}`))
-        return;
+      if (element.id === dropdownId || element.closest(`#${dropdownId}`)) return;
       const clientX = e.clientX;
       const clientY = e.clientY;
-      if (this.hoverDebounceTimer !== null)
-        window.clearTimeout(this.hoverDebounceTimer);
+      if (this.hoverDebounceTimer !== null) window.clearTimeout(this.hoverDebounceTimer);
       this.hoverDebounceTimer = window.setTimeout(() => {
         this.hoverDebounceTimer = null;
         const target = this.resolveTarget(element, clientX, clientY, "hover");
@@ -2321,8 +2055,7 @@
         this.hoverDebounceTimer = null;
       }
       const related = e.relatedTarget;
-      if (related && ((_a = e.target) == null ? void 0 : _a.contains(related)))
-        return;
+      if (related && ((_a = e.target) == null ? void 0 : _a.contains(related))) return;
       this.overlay.clearHover();
     }
     // ─── Click — intercept default actions + open (or switch) popover ────────
@@ -2334,22 +2067,15 @@
       const popoverId = CACHE_EDITOR_SELECTORS.POPOVER;
       if (element.id === popoverId || element.closest(`#${popoverId}`)) return;
       const editPillId = CACHE_EDITOR_SELECTORS.EDIT_PILL;
-      if (element.id === editPillId || element.closest(`#${editPillId}`))
-        return;
+      if (element.id === editPillId || element.closest(`#${editPillId}`)) return;
       const dropdownId = SELECTORS.DROPDOWN_CONTAINER;
-      if (element.id === dropdownId || element.closest(`#${dropdownId}`))
-        return;
+      if (element.id === dropdownId || element.closest(`#${dropdownId}`)) return;
       const target = this.resolveTarget(element, e.clientX, e.clientY, "click");
       if (!target) return;
       e.preventDefault();
       e.stopPropagation();
       if (this.overlay.isSaving()) return;
-      if (
-        this.overlay.isPopoverOpen() &&
-        ((_a = this.currentTarget) == null ? void 0 : _a.element) ===
-          target.element
-      )
-        return;
+      if (this.overlay.isPopoverOpen() && ((_a = this.currentTarget) == null ? void 0 : _a.element) === target.element) return;
       if (this.overlay.isPopoverOpen()) {
         this.overlay.hidePopover();
       }
@@ -2365,11 +2091,7 @@
         if (target) return target;
       }
       if (mode === "click") {
-        const pointerTarget = this.findPointerEventsNoneTranslatedAt(
-          element,
-          clientX,
-          clientY,
-        );
+        const pointerTarget = this.findPointerEventsNoneTranslatedAt(element, clientX, clientY);
         if (pointerTarget) {
           return TextFinder.findTargetAt(pointerTarget);
         }
@@ -2382,12 +2104,7 @@
         const el = node;
         if (window.getComputedStyle(el).pointerEvents !== "none") continue;
         const rect = el.getBoundingClientRect();
-        if (
-          clientX >= rect.left &&
-          clientX <= rect.right &&
-          clientY >= rect.top &&
-          clientY <= rect.bottom
-        ) {
+        if (clientX >= rect.left && clientX <= rect.right && clientY >= rect.top && clientY <= rect.bottom) {
           return el;
         }
       }
@@ -2406,19 +2123,13 @@
       if (!target) return;
       const draft = this.overlay.getTranslationDraft();
       if (!draft.trim()) {
-        ErrorHandler.showErrorMessage(
-          "config-invalid",
-          "Translation cannot be empty.",
-        );
+        ErrorHandler.showErrorMessage("config-invalid", "Translation cannot be empty.");
         return;
       }
       const translationConfig = this.configManager.getTranslationConfig();
       const apiConfig = this.configManager.getApiConfig();
       if (!translationConfig || !apiConfig) {
-        ErrorHandler.showErrorMessage(
-          "config-invalid",
-          "Translation is not configured.",
-        );
+        ErrorHandler.showErrorMessage("config-invalid", "Translation is not configured.");
         return;
       }
       this.overlay.setSaving(true);
@@ -2427,27 +2138,22 @@
           apiConfig,
           sourceText: target.sourceText,
           targetLang: target.targetLanguage,
-          value: draft,
+          value: draft
         });
         applyManualTranslationToParent(
           target.element,
           target.sourceText,
           draft,
-          target.targetLanguage,
+          target.targetLanguage
         );
         this.overlay.hidePopover();
         this.currentTarget = null;
       } catch (e) {
-        const msg =
-          e instanceof Error ? e.message : "Could not save translation.";
+        const msg = e instanceof Error ? e.message : "Could not save translation.";
         let errorType = "server";
         if (e instanceof TypeError && msg.includes("Failed to fetch")) {
           errorType = "network";
-        } else if (
-          msg.toLowerCase().includes("session") ||
-          msg.toLowerCase().includes("forbidden") ||
-          msg.toLowerCase().includes("not authorized")
-        ) {
+        } else if (msg.toLowerCase().includes("session") || msg.toLowerCase().includes("forbidden") || msg.toLowerCase().includes("not authorized")) {
           errorType = "auth";
         }
         ErrorHandler.showErrorMessage(errorType, msg);
@@ -2458,12 +2164,10 @@
     // ─── Reposition on scroll / resize ───────────────────────────────────────
     scheduleReposition() {
       if (!this.overlay.isPopoverOpen() || !this.currentTarget) return;
-      if (this.repositionTimer !== null)
-        window.clearTimeout(this.repositionTimer);
+      if (this.repositionTimer !== null) window.clearTimeout(this.repositionTimer);
       this.repositionTimer = window.setTimeout(() => {
         this.repositionTimer = null;
-        if (this.currentTarget)
-          this.overlay.reposition(this.currentTarget.element);
+        if (this.currentTarget) this.overlay.reposition(this.currentTarget.element);
       }, REPOSITION_DEBOUNCE_MS);
     }
   }
@@ -2484,12 +2188,7 @@
       this.isAnchored = false;
       this.usingBottomRightAnchor = true;
       this.handleMouseDown = (e) => {
-        if (
-          this.isExpanded ||
-          this.options.isTranslating ||
-          this.options.disabled
-        )
-          return;
+        if (this.isExpanded || this.options.isTranslating || this.options.disabled) return;
         if (!this.container) return;
         const target = e.target;
         const isLink = target.closest("a") !== null;
@@ -2510,10 +2209,7 @@
         const dragThreshold = 5;
         const deltaX = Math.abs(e.clientX - this.dragStartX);
         const deltaY = Math.abs(e.clientY - this.dragStartY);
-        if (
-          !this.isDragging &&
-          (deltaX > dragThreshold || deltaY > dragThreshold)
-        ) {
+        if (!this.isDragging && (deltaX > dragThreshold || deltaY > dragThreshold)) {
           this.isDragging = true;
           this.didDrag = true;
           this.convertToPixelAnchor();
@@ -2552,7 +2248,7 @@
           this.savePosition({
             anchor: "br",
             x: rightOffset,
-            y: bottomOffset,
+            y: bottomOffset
           });
           this.anchorContainerToBottomRight(rightOffset, bottomOffset);
           this.isAnchored = true;
@@ -2560,12 +2256,7 @@
         }
       };
       this.handleTouchStart = (e) => {
-        if (
-          this.isExpanded ||
-          this.options.isTranslating ||
-          this.options.disabled
-        )
-          return;
+        if (this.isExpanded || this.options.isTranslating || this.options.disabled) return;
         if (!this.container) return;
         const target = e.target;
         const isLink = target.closest("a") !== null;
@@ -2578,9 +2269,7 @@
         this.dragTimer = window.setTimeout(() => {
           this.isDragging = true;
         }, 200);
-        document.addEventListener("touchmove", this.handleTouchMove, {
-          passive: false,
-        });
+        document.addEventListener("touchmove", this.handleTouchMove, { passive: false });
         document.addEventListener("touchend", this.handleTouchEnd);
         e.preventDefault();
       };
@@ -2594,10 +2283,7 @@
         const dragThreshold = 5;
         const deltaX = Math.abs(touch.clientX - this.dragStartX);
         const deltaY = Math.abs(touch.clientY - this.dragStartY);
-        if (
-          !this.isDragging &&
-          (deltaX > dragThreshold || deltaY > dragThreshold)
-        ) {
+        if (!this.isDragging && (deltaX > dragThreshold || deltaY > dragThreshold)) {
           this.isDragging = true;
           this.didDrag = true;
           this.convertToPixelAnchor();
@@ -2640,7 +2326,7 @@
           this.savePosition({
             anchor: "br",
             x: rightOffset,
-            y: bottomOffset,
+            y: bottomOffset
           });
           this.anchorContainerToBottomRight(rightOffset, bottomOffset);
           this.isAnchored = true;
@@ -2648,12 +2334,7 @@
         }
       };
       this.toggleLanguageList = (_e) => {
-        if (
-          !this.container ||
-          this.options.isTranslating ||
-          this.options.disabled
-        )
-          return;
+        if (!this.container || this.options.isTranslating || this.options.disabled) return;
         if (this.isDragging) {
           this.isDragging = false;
           return;
@@ -2682,8 +2363,7 @@
         const currH = window.innerHeight;
         const widthChanged = Math.abs(currW - this.prevViewportWidth) > 1;
         const heightDelta = Math.abs(currH - this.prevViewportHeight);
-        const smallHeightOnlyChange =
-          !widthChanged && heightDelta > 0 && heightDelta <= 120;
+        const smallHeightOnlyChange = !widthChanged && heightDelta > 0 && heightDelta <= 120;
         this.prevViewportWidth = currW;
         this.prevViewportHeight = currH;
         if (this.usingBottomRightAnchor) {
@@ -2695,11 +2375,7 @@
         if (this.isAnchored) {
           const rect = this.container.getBoundingClientRect();
           const minMargin = 24;
-          const isOutside =
-            rect.left < minMargin ||
-            rect.top < minMargin ||
-            rect.right > currW - minMargin ||
-            rect.bottom > currH - minMargin;
+          const isOutside = rect.left < minMargin || rect.top < minMargin || rect.right > currW - minMargin || rect.bottom > currH - minMargin;
           if (widthChanged || isOutside || !smallHeightOnlyChange) {
             const clamped = this.constrainToViewport(rect.left, rect.top);
             this.anchorContainerToPixels(clamped.x, clamped.y);
@@ -2750,13 +2426,7 @@
             top = Math.max(margin, viewportHeight - listHeight - margin);
           }
         } else {
-          const besideLeft =
-            buttonRect.left > screenHalf
-              ? Math.max(margin, buttonRect.left - listWidth - margin)
-              : Math.min(
-                  buttonRect.right + margin,
-                  viewportWidth - listWidth - margin,
-                );
+          const besideLeft = buttonRect.left > screenHalf ? Math.max(margin, buttonRect.left - listWidth - margin) : Math.min(buttonRect.right + margin, viewportWidth - listWidth - margin);
           top = buttonRect.top - listHeight - margin;
           if (top >= margin) {
             left = besideLeft;
@@ -2765,19 +2435,10 @@
             left = besideLeft;
           }
         }
-        left = Math.max(
-          margin,
-          Math.min(left, viewportWidth - listWidth - margin),
-        );
-        const clampedViewportLeft = Math.max(
-          margin,
-          Math.min(left, viewportWidth - listWidth - margin),
-        );
+        left = Math.max(margin, Math.min(left, viewportWidth - listWidth - margin));
+        const clampedViewportLeft = Math.max(margin, Math.min(left, viewportWidth - listWidth - margin));
         const relLeft = clampedViewportLeft - containerRect.left;
-        const clampedViewportTop = Math.max(
-          margin,
-          Math.min(top, viewportHeight - listHeight - margin),
-        );
+        const clampedViewportTop = Math.max(margin, Math.min(top, viewportHeight - listHeight - margin));
         const relTop = clampedViewportTop - containerRect.top;
         this.languageList.style.position = "absolute";
         this.languageList.style.left = `${relLeft}px`;
@@ -2807,10 +2468,7 @@
     updateButtonLanguage() {
       if (!this.iconButton || !this.options.config) return;
       this.iconButton.innerHTML = "";
-      const svgElement = document.createElementNS(
-        "http://www.w3.org/2000/svg",
-        "svg",
-      );
+      const svgElement = document.createElementNS("http://www.w3.org/2000/svg", "svg");
       svgElement.setAttribute("width", "20px");
       svgElement.setAttribute("height", "20px");
       svgElement.setAttribute("viewBox", "0 0 24 24");
@@ -2857,7 +2515,8 @@
         this.anchorContainerToPixels(rect.left, rect.top);
         this.isAnchored = true;
         this.usingBottomRightAnchor = false;
-      } catch {}
+      } catch {
+      }
     }
     update(newOptions) {
       this.options = { ...this.options, ...newOptions };
@@ -2868,10 +2527,7 @@
       if (this.iconButton) {
         if (this.options.disabled) {
           this.iconButton.disabled = true;
-          this.iconButton.setAttribute(
-            "title",
-            "Translation service unavailable",
-          );
+          this.iconButton.setAttribute("title", "Translation service unavailable");
           this.positionLanguageList();
         } else {
           this.iconButton.disabled = false;
@@ -2884,9 +2540,7 @@
       const themeColors = getTranslatorThemeColors(theme);
       const isDark = theme === "dark";
       const thumbColor = isDark ? "rgba(255,255,255,0.35)" : "rgba(0,0,0,0.2)";
-      const thumbHoverColor = isDark
-        ? "rgba(255,255,255,0.55)"
-        : "rgba(0,0,0,0.35)";
+      const thumbHoverColor = isDark ? "rgba(255,255,255,0.55)" : "rgba(0,0,0,0.35)";
       const trackColor = themeColors.bg;
       return `
             #${SELECTORS.DROPDOWN_CONTAINER} {
@@ -3060,31 +2714,13 @@
     }
     capitalizeLabel(label) {
       const escapeHtml = (unsafe) => {
-        return unsafe
-          .replace(/&/g, "&amp;")
-          .replace(/</g, "&lt;")
-          .replace(/>/g, "&gt;")
-          .replace(/"/g, "&quot;")
-          .replace(/'/g, "&#039;");
+        return unsafe.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
       };
       const escapedLabel = escapeHtml(label);
       const parts = escapedLabel.split("(");
-      const beforeParen = parts[0]
-        .trim()
-        .split(" ")
-        .map(
-          (word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase(),
-        )
-        .join(" ");
+      const beforeParen = parts[0].trim().split(" ").map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()).join(" ");
       if (parts.length === 1) return beforeParen;
-      const insideParen = parts[1]
-        .replace(")", "")
-        .trim()
-        .split(" ")
-        .map(
-          (word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase(),
-        )
-        .join(" ");
+      const insideParen = parts[1].replace(")", "").trim().split(" ").map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()).join(" ");
       return `${beforeParen} (${insideParen})`;
     }
     constrainToViewport(x, y) {
@@ -3098,16 +2734,14 @@
       if (document.getElementById(CACHE_EDITOR_SELECTORS.EDIT_PILL)) {
         minY = Math.max(
           minY,
-          EDIT_PILL_LAYOUT.VIEWPORT_MARGIN +
-            EDIT_PILL_LAYOUT.GAP +
-            dropdownHeight,
+          EDIT_PILL_LAYOUT.VIEWPORT_MARGIN + EDIT_PILL_LAYOUT.GAP + dropdownHeight
         );
       }
       const maxX = viewportWidth - dropdownWidth - minMargin;
       const maxY = viewportHeight - dropdownHeight - minMargin;
       return {
         x: Math.max(minMargin, Math.min(x, maxX)),
-        y: Math.max(minY, Math.min(y, maxY)),
+        y: Math.max(minY, Math.min(y, maxY))
       };
     }
     restorePosition() {
@@ -3127,7 +2761,8 @@
         if (window.innerWidth <= 768) {
           return;
         }
-      } catch {}
+      } catch {
+      }
       if (typeof position.x === "number" && typeof position.y === "number") {
         const clamped = this.constrainToViewport(position.x, position.y);
         this.anchorContainerToPixels(clamped.x, clamped.y);
@@ -3139,10 +2774,7 @@
     // Local storage methods
     savePosition(position) {
       try {
-        localStorage.setItem(
-          "camb_dropdown_position",
-          JSON.stringify(position),
-        );
+        localStorage.setItem("camb_dropdown_position", JSON.stringify(position));
       } catch (error) {
         console.error("Failed to save dropdown position", error);
       }
@@ -3158,11 +2790,7 @@
     }
     populateLanguageList() {
       if (!this.languageList) return;
-      const {
-        config,
-        currentLang,
-        translatedDropdownLabels = {},
-      } = this.options;
+      const { config, currentLang, translatedDropdownLabels = {} } = this.options;
       this.languageList.innerHTML = "";
       const scrollContainer = document.createElement("div");
       scrollContainer.classList.add("language-options-scroll");
@@ -3170,9 +2798,7 @@
         const statusOption = document.createElement("div");
         statusOption.classList.add("language-option", "translation-status");
         statusOption.setAttribute("data-no-translate", "true");
-        statusOption.textContent = this.options.isTranslating
-          ? "Language being translated..."
-          : "Translation service unavailable";
+        statusOption.textContent = this.options.isTranslating ? "Language being translated..." : "Translation service unavailable";
         statusOption.style.cursor = "default";
         statusOption.style.opacity = "0.6";
         statusOption.style.pointerEvents = "none";
@@ -3185,12 +2811,8 @@
         return;
       }
       const sourceLanguage = config.defaultLang;
-      const available = new Set(
-        [...config.targetLanguages, sourceLanguage].filter(Boolean),
-      );
-      const availableLanguages = Array.from(available).filter(
-        (l) => config.languageLabels[l],
-      );
+      const available = new Set([...config.targetLanguages, sourceLanguage].filter(Boolean));
+      const availableLanguages = Array.from(available).filter((l) => config.languageLabels[l]);
       const allLanguages = [];
       if (currentLang !== sourceLanguage) {
         if (sourceLanguage && config.languageLabels[sourceLanguage]) {
@@ -3211,8 +2833,7 @@
         option.classList.add("language-option");
         option.setAttribute("data-lang", l);
         option.setAttribute("data-no-translate", "true");
-        const rawLabel =
-          translatedDropdownLabels[l] || config.languageLabels[l];
+        const rawLabel = translatedDropdownLabels[l] || config.languageLabels[l];
         const displayName = this.capitalizeLabel(rawLabel);
         option.textContent = displayName;
         if (l === currentLang) {
@@ -3220,9 +2841,7 @@
         }
         option.addEventListener("click", () => {
           var _a, _b;
-          (_b = (_a = this.options).onLanguageChange) == null
-            ? void 0
-            : _b.call(_a, l);
+          (_b = (_a = this.options).onLanguageChange) == null ? void 0 : _b.call(_a, l);
           this.toggleLanguageList(new MouseEvent("click"));
         });
         scrollContainer.appendChild(option);
@@ -3269,13 +2888,9 @@
       this.iconButton.style.display = "flex";
       this.iconButton.style.alignItems = "center";
       this.iconButton.style.justifyContent = "center";
-      this.iconButton.style.boxShadow =
-        "var(--tl-box-shadow, 0 2px 8px rgba(0,0,0,0.3))";
+      this.iconButton.style.boxShadow = "var(--tl-box-shadow, 0 2px 8px rgba(0,0,0,0.3))";
       this.iconButton.style.transition = "transform 0.3s ease";
-      const svgElement = document.createElementNS(
-        "http://www.w3.org/2000/svg",
-        "svg",
-      );
+      const svgElement = document.createElementNS("http://www.w3.org/2000/svg", "svg");
       svgElement.setAttribute("width", "20px");
       svgElement.setAttribute("height", "20px");
       svgElement.setAttribute("viewBox", "0 0 24 24");
@@ -3308,9 +2923,7 @@
       this.iconButton.appendChild(svgElement);
       iconWrapper.appendChild(this.iconButton);
       this.iconButton.addEventListener("mousedown", this.handleMouseDown);
-      this.iconButton.addEventListener("touchstart", this.handleTouchStart, {
-        passive: false,
-      });
+      this.iconButton.addEventListener("touchstart", this.handleTouchStart, { passive: false });
       this.iconButton.addEventListener("click", (e) => {
         if (this.didDrag) {
           e.preventDefault();
@@ -3327,10 +2940,7 @@
       this.container.appendChild(this.languageList);
       if (this.iconButton && this.options.disabled) {
         this.iconButton.disabled = true;
-        this.iconButton.setAttribute(
-          "title",
-          "Translation service unavailable",
-        );
+        this.iconButton.setAttribute("title", "Translation service unavailable");
       }
       document.body.appendChild(this.container);
       this.prevViewportWidth = window.innerWidth;
@@ -3366,7 +2976,7 @@
         subtree: true,
         characterData: true,
         attributes: true,
-        attributeFilter: [...TRANSLATABLE_ATTRIBUTES],
+        attributeFilter: [...TRANSLATABLE_ATTRIBUTES]
       };
       this.observer.observe(document.body, observeOptions);
       this.observeOpenShadowRoots(document.body, observeOptions);
@@ -3381,34 +2991,24 @@
       var _a, _b;
       for (const mutation of mutations) {
         if (mutation.type === "childList") {
-          if (
-            mutation.addedNodes.length > 0 &&
-            mutation.removedNodes.length === 1
-          ) {
+          if (mutation.addedNodes.length > 0 && mutation.removedNodes.length === 1) {
             const twin = mutation.removedNodes[0];
-            if (
-              twin.nodeType === 1 &&
-              twin.hasAttribute(ATTRIBUTES.SOURCE_TEXT)
-            ) {
+            if (twin.nodeType === 1 && twin.hasAttribute(ATTRIBUTES.SOURCE_TEXT)) {
               mutation.addedNodes.forEach((node) => {
                 if (node.nodeType === 1) {
                   const el = node;
                   if (!el.hasAttribute(ATTRIBUTES.SOURCE_TEXT)) {
                     el.setAttribute(
                       ATTRIBUTES.SOURCE_TEXT,
-                      twin.getAttribute(ATTRIBUTES.SOURCE_TEXT),
+                      twin.getAttribute(ATTRIBUTES.SOURCE_TEXT)
                     );
-                    const translatedTo = twin.getAttribute(
-                      ATTRIBUTES.TRANSLATED_TO,
-                    );
+                    const translatedTo = twin.getAttribute(ATTRIBUTES.TRANSLATED_TO);
                     if (translatedTo) {
                       el.setAttribute(ATTRIBUTES.TRANSLATED_TO, translatedTo);
                     }
                     for (let i = 0; i < twin.attributes.length; i++) {
                       const attr = twin.attributes[i];
-                      if (
-                        attr.name.startsWith(ATTRIBUTES.SOURCE_ATTRIBUTE_PREFIX)
-                      ) {
+                      if (attr.name.startsWith(ATTRIBUTES.SOURCE_ATTRIBUTE_PREFIX)) {
                         if (!el.hasAttribute(attr.name)) {
                           el.setAttribute(attr.name, attr.value);
                         }
@@ -3420,11 +3020,7 @@
             }
           }
           mutation.addedNodes.forEach((node) => {
-            if (
-              this.isTranslatableElement(node) &&
-              !queued.has(node) &&
-              !translated.has(node)
-            ) {
+            if (this.isTranslatableElement(node) && !queued.has(node) && !translated.has(node)) {
               this.onContentChange(node);
             }
           });
@@ -3432,23 +3028,14 @@
           const textNode = mutation.target;
           const parent = mutation.target.parentElement;
           if (!parent) continue;
-          const translationState = parent.getAttribute(
-            ATTRIBUTES.TRANSLATION_STATE,
-          );
+          const translationState = parent.getAttribute(ATTRIBUTES.TRANSLATION_STATE);
           const translatedTo = parent.getAttribute(ATTRIBUTES.TRANSLATED_TO);
           const currentLang = this.configManager.getCurrentLanguage();
-          if (
-            translationState === "translated" ||
-            translatedTo === currentLang
-          ) {
+          if (translationState === "translated" || translatedTo === currentLang) {
             const stored = getTranslatedText(textNode);
-            const current =
-              ((_a = mutation.target.data) == null ? void 0 : _a.trim()) || "";
+            const current = ((_a = mutation.target.data) == null ? void 0 : _a.trim()) || "";
             if (stored !== void 0 && stored !== current) {
-              parent.setAttribute(
-                ATTRIBUTES.SOURCE_TEXT,
-                mutation.target.data || "",
-              );
+              parent.setAttribute(ATTRIBUTES.SOURCE_TEXT, mutation.target.data || "");
               clearTranslatedText(textNode);
               translated.delete(textNode);
               parent.removeAttribute(ATTRIBUTES.TRANSLATION_STATE);
@@ -3459,37 +3046,21 @@
               continue;
             }
           }
-          if (
-            this.isTranslatableElement(parent) &&
-            !queued.has(parent) &&
-            !translated.has(parent)
-          ) {
+          if (this.isTranslatableElement(parent) && !queued.has(parent) && !translated.has(parent)) {
             this.onContentChange(parent);
           }
         } else if (mutation.type === "attributes") {
           const element = mutation.target;
           const attrName = mutation.attributeName || "";
-          const translationState = element.getAttribute(
-            ATTRIBUTES.TRANSLATION_STATE,
-          );
+          const translationState = element.getAttribute(ATTRIBUTES.TRANSLATION_STATE);
           const translatedTo = element.getAttribute(ATTRIBUTES.TRANSLATED_TO);
           const currentLang = this.configManager.getCurrentLanguage();
-          if (
-            (translationState === "translated" ||
-              translatedTo === currentLang) &&
-            attrName
-          ) {
+          if ((translationState === "translated" || translatedTo === currentLang) && attrName) {
             const storedAttr = getTranslatedAttribute(element, attrName);
-            const currentVal =
-              ((_b = element.getAttribute(attrName)) == null
-                ? void 0
-                : _b.trim()) || "";
+            const currentVal = ((_b = element.getAttribute(attrName)) == null ? void 0 : _b.trim()) || "";
             if (storedAttr !== void 0 && storedAttr !== currentVal) {
               const sourceAttributeName = `${ATTRIBUTES.SOURCE_ATTRIBUTE_PREFIX}${attrName}`;
-              element.setAttribute(
-                sourceAttributeName,
-                element.getAttribute(attrName) || "",
-              );
+              element.setAttribute(sourceAttributeName, element.getAttribute(attrName) || "");
               clearTranslatedAttribute(element, attrName);
               translated.delete(element);
               element.removeAttribute(ATTRIBUTES.TRANSLATION_STATE);
@@ -3500,12 +3071,7 @@
               continue;
             }
           }
-          if (
-            element &&
-            this.isTranslatableElement(element) &&
-            !queued.has(element) &&
-            !translated.has(element)
-          ) {
+          if (element && this.isTranslatableElement(element) && !queued.has(element) && !translated.has(element)) {
             this.onContentChange(element);
           }
         }
@@ -3516,13 +3082,8 @@
       const element = node;
       if (element.tagName === "p") return true;
       if (element.tagName === "span") return true;
-      const translationState = element.getAttribute(
-        ATTRIBUTES.TRANSLATION_STATE,
-      );
-      if (
-        translationState === "translating" ||
-        translationState === "translated"
-      ) {
+      const translationState = element.getAttribute(ATTRIBUTES.TRANSLATION_STATE);
+      if (translationState === "translating" || translationState === "translated") {
         return false;
       }
       if (element.matches(DROPDOWN_EXCLUDED_SELECTORS.join(", "))) return false;
@@ -3541,17 +3102,19 @@
         const sr = root.shadowRoot;
         try {
           this.observer.observe(sr, options);
-        } catch {}
+        } catch {
+        }
       }
       const walker = document.createTreeWalker(base, NodeFilter.SHOW_ELEMENT);
       let node;
-      while ((node = walker.nextNode())) {
+      while (node = walker.nextNode()) {
         const el = node;
         const sr = el.shadowRoot;
         if (sr) {
           try {
             this.observer.observe(sr, options);
-          } catch {}
+          } catch {
+          }
           this.observeOpenShadowRoots(sr, options);
         }
       }
@@ -3561,48 +3124,36 @@
       const original = Element.prototype.attachShadow;
       const self = this;
       try {
-        Element.prototype.attachShadow = function (init) {
+        Element.prototype.attachShadow = function(init) {
           const sr = original.call(this, init);
           try {
             if (init && init.mode === "open" && self.observer) {
               self.observer.observe(sr, options);
             }
-          } catch {}
+          } catch {
+          }
           return sr;
         };
         window.__tlAttachShadowPatched = true;
-      } catch {}
+      } catch {
+      }
     }
   }
   class TextExtractor {
     static extractFromElement(root, shouldCheckUnwantedContent) {
       return this.extractWithLanguageFilter(root, shouldCheckUnwantedContent);
     }
-    static extractFreshContentForLanguage(
-      root,
-      targetLanguage,
-      shouldCheckUnwantedContent,
-    ) {
-      return this.extractWithLanguageFilter(
-        root,
-        shouldCheckUnwantedContent,
-        targetLanguage,
-      );
+    static extractFreshContentForLanguage(root, targetLanguage, shouldCheckUnwantedContent) {
+      return this.extractWithLanguageFilter(root, shouldCheckUnwantedContent, targetLanguage);
     }
-    static extractWithLanguageFilter(
-      root,
-      _shouldCheckUnwantedContent,
-      targetLanguage,
-    ) {
+    static extractWithLanguageFilter(root, _shouldCheckUnwantedContent, targetLanguage) {
       const textNodes = [];
       const nodeMap = /* @__PURE__ */ new Map();
       const attributeTexts = [];
       const attributeMap = /* @__PURE__ */ new Map();
       let textIndex = 0;
       let attributeIndex = 0;
-      const translatableAttributeSelector = TRANSLATABLE_ATTRIBUTES.map(
-        (attr) => `[${attr}]`,
-      ).join(",");
+      const translatableAttributeSelector = TRANSLATABLE_ATTRIBUTES.map((attr) => `[${attr}]`).join(",");
       const acceptTextNode = (node) => {
         var _a;
         const text = (_a = node.textContent) == null ? void 0 : _a.trim();
@@ -3637,25 +3188,23 @@
           processContainer(sr);
         }
         const walker = document.createTreeWalker(base, NodeFilter.SHOW_TEXT, {
-          acceptNode: acceptTextNode,
+          acceptNode: acceptTextNode
         });
         let node;
-        while ((node = walker.nextNode())) {
+        while (node = walker.nextNode()) {
           const parent = node.parentElement;
           if (!parent) continue;
-          const sourceText = parent.hasAttribute(ATTRIBUTES.SOURCE_TEXT)
-            ? parent.getAttribute(ATTRIBUTES.SOURCE_TEXT)
-            : node.textContent;
+          const sourceText = parent.hasAttribute(ATTRIBUTES.SOURCE_TEXT) ? parent.getAttribute(ATTRIBUTES.SOURCE_TEXT) : node.textContent;
           textNodes.push(sourceText);
           nodeMap.set(textIndex, {
             node,
             parent,
-            sourceText,
+            sourceText
           });
           textIndex++;
         }
         const elementsWithAttributes = Array.from(
-          base.querySelectorAll(translatableAttributeSelector),
+          base.querySelectorAll(translatableAttributeSelector)
         );
         elementsWithAttributes.forEach((element) => {
           if (DomUtils.shouldPreventTranslation(element)) {
@@ -3664,10 +3213,7 @@
           if (DomUtils.isNonContentElement(element)) {
             return;
           }
-          if (
-            targetLanguage &&
-            element.getAttribute(ATTRIBUTES.TRANSLATED_TO) === targetLanguage
-          ) {
+          if (targetLanguage && element.getAttribute(ATTRIBUTES.TRANSLATED_TO) === targetLanguage) {
             return;
           }
           TRANSLATABLE_ATTRIBUTES.forEach((attr) => {
@@ -3681,18 +3227,15 @@
               }
               attributeMap.set(attributeIndex, {
                 element,
-                attribute: attr,
+                attribute: attr
               });
               attributeIndex++;
             }
           });
         });
-        const elementWalker = document.createTreeWalker(
-          base,
-          NodeFilter.SHOW_ELEMENT,
-        );
+        const elementWalker = document.createTreeWalker(base, NodeFilter.SHOW_ELEMENT);
         let elNode;
-        while ((elNode = elementWalker.nextNode())) {
+        while (elNode = elementWalker.nextNode()) {
           const el = elNode;
           const sr = el.shadowRoot;
           if (sr) {
@@ -3752,32 +3295,26 @@
       this.pending.clear();
       this.timerId = void 0;
       const payload = collectUniqueContent(elems);
-      if (payload.texts.length === 0 && payload.attributeTexts.length === 0)
-        return;
+      if (payload.texts.length === 0 && payload.attributeTexts.length === 0) return;
       this.requestQueue.push(payload);
       this.processQueue();
     }
     processQueue() {
-      if (
-        this.activeRequests >= this.concurrencyLimit ||
-        this.requestQueue.length === 0
-      ) {
+      if (this.activeRequests >= this.concurrencyLimit || this.requestQueue.length === 0) {
         return;
       }
       this.activeRequests++;
       const payload = this.requestQueue.shift();
       payload.textMap.forEach((target) => queued.add(target.node));
       payload.attributeMap.forEach(({ element }) => queued.add(element));
-      this.sendFn(payload)
-        .catch((err) => {
-          console.error("DebouncedSender sendFn error:", err);
-          payload.textMap.forEach((target) => queued.delete(target.node));
-          payload.attributeMap.forEach(({ element }) => queued.delete(element));
-        })
-        .finally(() => {
-          this.activeRequests--;
-          this.processQueue();
-        });
+      this.sendFn(payload).catch((err) => {
+        console.error("DebouncedSender sendFn error:", err);
+        payload.textMap.forEach((target) => queued.delete(target.node));
+        payload.attributeMap.forEach(({ element }) => queued.delete(element));
+      }).finally(() => {
+        this.activeRequests--;
+        this.processQueue();
+      });
     }
   }
   function collectUniqueContent(elems) {
@@ -3792,13 +3329,11 @@
         textNodes,
         nodeMap,
         attributeTexts: elemAttrTexts,
-        attributeMap: elemAttrMap,
+        attributeMap: elemAttrMap
       } = TextExtractor.extractFreshContentForLanguage(
         el,
         document.documentElement.lang,
-        (text) =>
-          TextExtractor.isJsonString(text) ||
-          TextExtractor.isUnwantedContent(text),
+        (text) => TextExtractor.isJsonString(text) || TextExtractor.isUnwantedContent(text)
       );
       textNodes.forEach((txt, localIdx) => {
         const target = nodeMap.get(localIdx);
@@ -3810,8 +3345,7 @@
       elemAttrTexts.forEach((txt, localIdx) => {
         const attrInfo = elemAttrMap.get(localIdx);
         if (!attrInfo) return;
-        if (queued.has(attrInfo.element) || translated.has(attrInfo.element))
-          return;
+        if (queued.has(attrInfo.element) || translated.has(attrInfo.element)) return;
         attributeTexts.push(txt);
         attributeMap.set(attrIdx++, attrInfo);
       });
@@ -3829,8 +3363,7 @@
         this.clearDebounce();
         this.debounceTimer = window.setTimeout(() => {
           if (this.handler) {
-            const currentUrl =
-              window.location.pathname + window.location.search;
+            const currentUrl = window.location.pathname + window.location.search;
             this.handler(currentUrl);
           }
         }, TIMINGS.SPA_NAVIGATION_DEBOUNCE);
@@ -3897,14 +3430,8 @@
       if (title && title.length > 0) {
         context.title = title;
       }
-      const descriptionMeta = document.querySelector(
-        'meta[name="description"]',
-      );
-      const description =
-        (_b = descriptionMeta == null ? void 0 : descriptionMeta.content) ==
-        null
-          ? void 0
-          : _b.trim();
+      const descriptionMeta = document.querySelector('meta[name="description"]');
+      const description = (_b = descriptionMeta == null ? void 0 : descriptionMeta.content) == null ? void 0 : _b.trim();
       if (description && description.length > 0) {
         context.description = description;
       }
@@ -3921,10 +3448,7 @@
         list.push(["title", title]);
       }
       const desc = document.querySelector('meta[name="description"]');
-      const descContent =
-        (_b = desc == null ? void 0 : desc.content) == null
-          ? void 0
-          : _b.trim();
+      const descContent = (_b = desc == null ? void 0 : desc.content) == null ? void 0 : _b.trim();
       if (descContent) {
         list.push(["description", descContent]);
       }
@@ -3935,31 +3459,20 @@
       translated2.forEach(([key, val]) => {
         if (key === "title") {
           document.title = val;
-          html.setAttribute(
-            ATTRIBUTES.TRANSLATED_TO,
-            document.documentElement.lang,
-          );
+          html.setAttribute(ATTRIBUTES.TRANSLATED_TO, document.documentElement.lang);
         } else if (key === "description") {
           const meta = document.querySelector('meta[name="description"]');
           if (meta) {
             meta.content = val;
-            html.setAttribute(
-              ATTRIBUTES.TRANSLATED_TO,
-              document.documentElement.lang,
-            );
+            html.setAttribute(ATTRIBUTES.TRANSLATED_TO, document.documentElement.lang);
           }
         }
       });
     }
   }
   function buildDropdownLabelPayload(config) {
-    const allLangs = /* @__PURE__ */ new Set([
-      ...config.targetLanguages,
-      config.defaultLang,
-    ]);
-    const keys = Array.from(allLangs).filter(
-      (key) => config.languageLabels[key],
-    );
+    const allLangs = /* @__PURE__ */ new Set([...config.targetLanguages, config.defaultLang]);
+    const keys = Array.from(allLangs).filter((key) => config.languageLabels[key]);
     return { keys, labels: keys.map((key) => config.languageLabels[key]) };
   }
   function mapTranslatedDropdownLabels(keys, translated2) {
@@ -3974,18 +3487,11 @@
   class SkeletonManager {
     static apply(node) {
       var _a;
-      if (
-        node.nodeType !== Node.TEXT_NODE ||
-        !((_a = node.textContent) == null ? void 0 : _a.trim())
-      ) {
+      if (node.nodeType !== Node.TEXT_NODE || !((_a = node.textContent) == null ? void 0 : _a.trim())) {
         return null;
       }
       const parent = node.parentElement;
-      if (
-        !parent ||
-        DomUtils.isNonContentElement(parent) ||
-        DomUtils.shouldPreventTranslation(parent)
-      ) {
+      if (!parent || DomUtils.isNonContentElement(parent) || DomUtils.shouldPreventTranslation(parent)) {
         return null;
       }
       const wrapper = document.createElement("span");
@@ -3995,10 +3501,7 @@
       const skeletonBgColor = this.adjustColorBrightness(hexColor, -5);
       const skeletonHighlightColor = this.adjustColorBrightness(hexColor, 10);
       wrapper.style.setProperty("--skeleton-bg-color", skeletonBgColor);
-      wrapper.style.setProperty(
-        "--skeleton-highlight-color",
-        skeletonHighlightColor,
-      );
+      wrapper.style.setProperty("--skeleton-highlight-color", skeletonHighlightColor);
       if (node.parentNode) {
         node.parentNode.insertBefore(wrapper, node);
         wrapper.appendChild(node);
@@ -4023,39 +3526,20 @@
         if (current === document.body) break;
         current = current.parentElement;
       }
-      return (
-        window.getComputedStyle(document.documentElement).backgroundColor ||
-        "#65737e"
-      );
+      return window.getComputedStyle(document.documentElement).backgroundColor || "#65737e";
     }
     static rgbToHex(rgb) {
       const result = rgb.match(/\d+/g);
       if (!result) return "#e0e0e0";
-      return (
-        "#" +
-        result
-          .slice(0, 3)
-          .map((x) => ("0" + parseInt(x).toString(16)).slice(-2))
-          .join("")
-      );
+      return "#" + result.slice(0, 3).map((x) => ("0" + parseInt(x).toString(16)).slice(-2)).join("");
     }
     static adjustColorBrightness(hex, percent) {
       const num = parseInt(hex.replace("#", ""), 16);
       const amt = Math.round(2.55 * percent);
       const R = (num >> 16) + amt;
-      const G = ((num >> 8) & 255) + amt;
+      const G = (num >> 8 & 255) + amt;
       const B = (num & 255) + amt;
-      return (
-        "#" +
-        (
-          16777216 +
-          (this.clamp(R, 0, 255) << 16) +
-          (this.clamp(G, 0, 255) << 8) +
-          this.clamp(B, 0, 255)
-        )
-          .toString(16)
-          .slice(1)
-      );
+      return "#" + (16777216 + (this.clamp(R, 0, 255) << 16) + (this.clamp(G, 0, 255) << 8) + this.clamp(B, 0, 255)).toString(16).slice(1);
     }
     static clamp(val, min, max) {
       return Math.min(Math.max(val, min), max);
@@ -4063,8 +3547,8 @@
   }
   const BUILD_INFO = {
     version: "1.0.1",
-    buildTime: /* @__PURE__ */ new Date().toISOString(),
-    environment: "development",
+    buildTime: (/* @__PURE__ */ new Date()).toISOString(),
+    environment: "development"
   };
   if (typeof window !== "undefined") {
     window.__TRANSLATOR_BUILD_INFO = BUILD_INFO;
@@ -4084,7 +3568,7 @@
       this.configManager = configManager;
       this.sender = new DebouncedSender(
         (payload) => this.translateBatch(payload),
-        TIMINGS.DYNAMIC_TRANSLATION_DEBOUNCE,
+        TIMINGS.DYNAMIC_TRANSLATION_DEBOUNCE
       );
       this.navigationService = new NavigationService();
       this.navigationService.setHandler(() => this.handleUrlChange());
@@ -4109,12 +3593,12 @@
         theme: SCRIPT_CONFIG.theme,
         translatedDropdownLabels,
         isTranslating: this.isTranslating,
-        disabled: this.serviceUnavailable,
+        disabled: this.serviceUnavailable
       };
       if (!this.languageDropdown) {
         this.languageDropdown = new LanguageDropdown({
           ...dropdownOptions,
-          onLanguageChange: (newLang) => this.switchLanguage(newLang),
+          onLanguageChange: (newLang) => this.switchLanguage(newLang)
         });
         this.languageDropdown.create();
       } else {
@@ -4132,18 +3616,16 @@
         return;
       }
       try {
-        const translated2 = await this.apiService.fetchTranslatedDropdownLabels(
-          {
-            translateConfig: {
-              targetLanguage: targetLang,
-              sourceLanguage: config.defaultLang,
-              websiteId: config.websiteId,
-            },
-            apiConfig,
-            dropdownLabels: labels,
-            pageContext: PageContextCollector.collectPageContext(),
+        const translated2 = await this.apiService.fetchTranslatedDropdownLabels({
+          translateConfig: {
+            targetLanguage: targetLang,
+            sourceLanguage: config.defaultLang,
+            websiteId: config.websiteId
           },
-        );
+          apiConfig,
+          dropdownLabels: labels,
+          pageContext: PageContextCollector.collectPageContext()
+        });
         this.translatedLabels = mapTranslatedDropdownLabels(keys, translated2);
         this.updateLanguageDropdown(this.translatedLabels);
       } catch (error) {
@@ -4159,47 +3641,35 @@
     async restoreToSourceLanguage() {
       var _a;
       (_a = this.observer) == null ? void 0 : _a.stop();
-      document
-        .querySelectorAll(`[${ATTRIBUTES.SOURCE_TEXT}]`)
-        .forEach((element) => {
-          const sourceText = element.getAttribute(ATTRIBUTES.SOURCE_TEXT);
-          const childNodes = Array.from(element.childNodes);
-          const textNode = childNodes.find(
-            (node) => node.nodeType === Node.TEXT_NODE,
-          );
-          if (sourceText && textNode) {
-            textNode.textContent = sourceText;
-            clearTranslatedText(textNode);
+      document.querySelectorAll(`[${ATTRIBUTES.SOURCE_TEXT}]`).forEach((element) => {
+        const sourceText = element.getAttribute(ATTRIBUTES.SOURCE_TEXT);
+        const childNodes = Array.from(element.childNodes);
+        const textNode = childNodes.find((node) => node.nodeType === Node.TEXT_NODE);
+        if (sourceText && textNode) {
+          textNode.textContent = sourceText;
+          clearTranslatedText(textNode);
+        }
+        element.removeAttribute(ATTRIBUTES.TRANSLATED_TO);
+        element.removeAttribute(ATTRIBUTES.TRANSLATION_STATE);
+      });
+      document.querySelectorAll(`[${ATTRIBUTES.TRANSLATED_TO}]`).forEach((element) => {
+        const attributesToRemove = [];
+        for (let i = 0; i < element.attributes.length; i++) {
+          const attr = element.attributes[i];
+          if (attr.name.startsWith(ATTRIBUTES.SOURCE_ATTRIBUTE_PREFIX)) {
+            const originalAttrName = attr.name.substring(ATTRIBUTES.SOURCE_ATTRIBUTE_PREFIX.length);
+            element.setAttribute(originalAttrName, attr.value);
+            attributesToRemove.push(attr.name);
           }
-          element.removeAttribute(ATTRIBUTES.TRANSLATED_TO);
-          element.removeAttribute(ATTRIBUTES.TRANSLATION_STATE);
-        });
-      document
-        .querySelectorAll(`[${ATTRIBUTES.TRANSLATED_TO}]`)
-        .forEach((element) => {
-          const attributesToRemove = [];
-          for (let i = 0; i < element.attributes.length; i++) {
-            const attr = element.attributes[i];
-            if (attr.name.startsWith(ATTRIBUTES.SOURCE_ATTRIBUTE_PREFIX)) {
-              const originalAttrName = attr.name.substring(
-                ATTRIBUTES.SOURCE_ATTRIBUTE_PREFIX.length,
-              );
-              element.setAttribute(originalAttrName, attr.value);
-              attributesToRemove.push(attr.name);
-            }
-          }
-          attributesToRemove.forEach((attrName) =>
-            element.removeAttribute(attrName),
-          );
-          element.removeAttribute(ATTRIBUTES.TRANSLATED_TO);
-          element.removeAttribute(ATTRIBUTES.TRANSLATION_STATE);
-          clearTranslatedAttribute(element);
-        });
-      document
-        .querySelectorAll(`[${ATTRIBUTES.TRANSLATION_STATE}]`)
-        .forEach((element) => {
-          element.removeAttribute(ATTRIBUTES.TRANSLATION_STATE);
-        });
+        }
+        attributesToRemove.forEach((attrName) => element.removeAttribute(attrName));
+        element.removeAttribute(ATTRIBUTES.TRANSLATED_TO);
+        element.removeAttribute(ATTRIBUTES.TRANSLATION_STATE);
+        clearTranslatedAttribute(element);
+      });
+      document.querySelectorAll(`[${ATTRIBUTES.TRANSLATION_STATE}]`).forEach((element) => {
+        element.removeAttribute(ATTRIBUTES.TRANSLATION_STATE);
+      });
       if (this.originalTitle) {
         document.title = this.originalTitle;
       }
@@ -4225,14 +3695,9 @@
         parentElement.setAttribute(ATTRIBUTES.TRANSLATED_TO, targetLang);
         const trimmedTranslated = translatedText.trim();
         setTranslatedText(liveNode, trimmedTranslated);
-        if (
-          this.normalizeText(originalText) !==
-          this.normalizeText(trimmedTranslated)
-        ) {
-          const leadingWs =
-            ((_a = originalText.match(/^\s+/)) == null ? void 0 : _a[0]) || "";
-          const trailingWs =
-            ((_b = originalText.match(/\s+$/)) == null ? void 0 : _b[0]) || "";
+        if (this.normalizeText(originalText) !== this.normalizeText(trimmedTranslated)) {
+          const leadingWs = ((_a = originalText.match(/^\s+/)) == null ? void 0 : _a[0]) || "";
+          const trailingWs = ((_b = originalText.match(/\s+$/)) == null ? void 0 : _b[0]) || "";
           liveNode.textContent = `${leadingWs}${trimmedTranslated}${trailingWs}`;
         }
       });
@@ -4254,9 +3719,7 @@
         return null;
       }
       const liveText = liveTextNode.textContent || "";
-      if (
-        this.normalizeText(liveText) !== this.normalizeText(target.sourceText)
-      ) {
+      if (this.normalizeText(liveText) !== this.normalizeText(target.sourceText)) {
         target.parent.setAttribute(ATTRIBUTES.SOURCE_TEXT, liveText);
         target.parent.removeAttribute(ATTRIBUTES.TRANSLATION_STATE);
         target.parent.removeAttribute(ATTRIBUTES.TRANSLATED_TO);
@@ -4273,7 +3736,7 @@
           var _a;
           const text = (_a = node.textContent) == null ? void 0 : _a.trim();
           return text ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT;
-        },
+        }
       });
       return walker.nextNode();
     }
@@ -4290,16 +3753,12 @@
       if (targetLang === config.defaultLang) {
         return this.restoreToSourceLanguage();
       }
-      const { textNodes, nodeMap, attributeTexts, attributeMap } =
-        TextExtractor.extractFreshContentForLanguage(
-          document,
-          targetLang,
-          (text) =>
-            TextExtractor.isJsonString(text) ||
-            TextExtractor.isUnwantedContent(text),
-        );
-      const { keys: dropdownLabelKeys, labels: dropdownLabels } =
-        buildDropdownLabelPayload(config);
+      const { textNodes, nodeMap, attributeTexts, attributeMap } = TextExtractor.extractFreshContentForLanguage(
+        document,
+        targetLang,
+        (text) => TextExtractor.isJsonString(text) || TextExtractor.isUnwantedContent(text)
+      );
+      const { keys: dropdownLabelKeys, labels: dropdownLabels } = buildDropdownLabelPayload(config);
       if (!this.originalTitle) {
         this.originalTitle = document.title;
       }
@@ -4309,11 +3768,7 @@
       }
       const metadata = MetadataUtils.collectMetadata();
       const metadataTexts = metadata.map(([, value]) => value);
-      if (
-        textNodes.length === 0 &&
-        metadataTexts.length === 0 &&
-        attributeTexts.length === 0
-      ) {
+      if (textNodes.length === 0 && metadataTexts.length === 0 && attributeTexts.length === 0) {
         this.notifyTranslatedPageReady();
         return;
       }
@@ -4348,56 +3803,39 @@
         const translateConfig = {
           targetLanguage: targetLang,
           sourceLanguage: translationConfig.defaultLang,
-          websiteId: translationConfig.websiteId,
+          websiteId: translationConfig.websiteId
         };
         this.currentAbortController = new AbortController();
         const pageContext = PageContextCollector.collectPageContext();
-        const fullTextNodes = [
-          ...textNodes,
-          ...attributeTexts,
-          ...metadataTexts,
-        ];
+        const fullTextNodes = [...textNodes, ...attributeTexts, ...metadataTexts];
         const response = await this.apiService.translateTextBased({
           textNodes: fullTextNodes,
           translateConfig,
           apiConfig,
           dropdownLabels,
           pageContext,
-          abortSignal: this.currentAbortController.signal,
+          abortSignal: this.currentAbortController.signal
         });
         skeletonMap.forEach((skeleton) => {
           SkeletonManager.remove(skeleton);
         });
         const translatedFullNodes = response.translatedTextNodes || [];
-        const translatedDropdownLabels =
-          response.translatedDropdownLabels || [];
-        const translatedTextNodes = translatedFullNodes.slice(
-          0,
-          textNodes.length,
-        );
+        const translatedDropdownLabels = response.translatedDropdownLabels || [];
+        const translatedTextNodes = translatedFullNodes.slice(0, textNodes.length);
         const translatedAttributeTexts = translatedFullNodes.slice(
           textNodes.length,
-          textNodes.length + attributeTexts.length,
+          textNodes.length + attributeTexts.length
         );
-        const translatedMetadataTexts = translatedFullNodes.slice(
-          textNodes.length + attributeTexts.length,
-        );
+        const translatedMetadataTexts = translatedFullNodes.slice(textNodes.length + attributeTexts.length);
         this.applyTranslatedTextNodes(translatedTextNodes, nodeMap, targetLang);
-        this.applyTranslatedAttributes(
-          translatedAttributeTexts,
-          attributeMap,
-          targetLang,
-        );
+        this.applyTranslatedAttributes(translatedAttributeTexts, attributeMap, targetLang);
         const translatedMetadata = metadata.map(([key], i) => [
           key,
-          translatedMetadataTexts[i] || "",
+          translatedMetadataTexts[i] || ""
         ]);
         MetadataUtils.applyMetadata(translatedMetadata);
         document.documentElement.lang = targetLang;
-        this.translatedLabels = mapTranslatedDropdownLabels(
-          dropdownLabelKeys,
-          translatedDropdownLabels,
-        );
+        this.translatedLabels = mapTranslatedDropdownLabels(dropdownLabelKeys, translatedDropdownLabels);
         this.updateLanguageDropdown(this.translatedLabels);
         if (!skipLoaders) {
           this.setTranslating(false);
@@ -4488,7 +3926,7 @@
       const translateCfg = {
         targetLanguage: this.configManager.getCurrentLanguage(),
         sourceLanguage: translationConfig.defaultLang,
-        websiteId: translationConfig.websiteId,
+        websiteId: translationConfig.websiteId
       };
       try {
         const allTexts = [...texts, ...attributeTexts];
@@ -4497,7 +3935,7 @@
           translateConfig: translateCfg,
           apiConfig,
           dropdownLabels: [],
-          pageContext: PageContextCollector.collectPageContext(),
+          pageContext: PageContextCollector.collectPageContext()
         });
         const allTranslated = resp.translatedTextNodes || [];
         const translatedTexts = allTranslated.slice(0, texts.length);
@@ -4505,16 +3943,8 @@
         skeletonMap.forEach((skeleton) => {
           SkeletonManager.remove(skeleton);
         });
-        this.applyTranslatedTextNodes(
-          translatedTexts,
-          textMap,
-          translateCfg.targetLanguage,
-        );
-        this.applyTranslatedAttributes(
-          translatedAttributes,
-          attributeMap,
-          translateCfg.targetLanguage,
-        );
+        this.applyTranslatedTextNodes(translatedTexts, textMap, translateCfg.targetLanguage);
+        this.applyTranslatedAttributes(translatedAttributes, attributeMap, translateCfg.targetLanguage);
         textMap.forEach((target) => {
           queued.delete(target.node);
           translated.add(target.node);
@@ -4543,14 +3973,13 @@
       }
       const useSeoNavigation = usesSeoRouting(config.seoConfiguration);
       if (useSeoNavigation) {
-        const onPrefixedSeoRoute =
-          this.configManager.getSeoContext().mode !== "source";
+        const onPrefixedSeoRoute = this.configManager.getSeoContext().mode !== "source";
         if (onPrefixedSeoRoute) {
           const targetUrl = buildLanguageUrl({
             seoConfiguration: config.seoConfiguration,
             defaultLang: config.defaultLang,
             targetLocale: newLang,
-            currentUrl: new URL(window.location.href),
+            currentUrl: new URL(window.location.href)
           });
           if (targetUrl) {
             this.configManager.setCurrentLanguage(newLang);
@@ -4593,18 +4022,12 @@
           if (e.message === "NETWORK_ERROR") {
             ErrorHandler.showErrorMessage(
               "network",
-              "Failed to switch language. Please check your connection.",
+              "Failed to switch language. Please check your connection."
             );
           } else if (e.message === "RATE_LIMIT") {
-            ErrorHandler.showErrorMessage(
-              "rate-limit",
-              "Too many requests. Please try again later.",
-            );
+            ErrorHandler.showErrorMessage("rate-limit", "Too many requests. Please try again later.");
           } else {
-            ErrorHandler.showErrorMessage(
-              "server",
-              "Failed to switch language. Please try again.",
-            );
+            ErrorHandler.showErrorMessage("server", "Failed to switch language. Please try again.");
           }
         }
         this.setTranslating(false);
@@ -4617,16 +4040,12 @@
       this.originalDescription = null;
     }
     clearTranslationAttributes() {
-      document
-        .querySelectorAll(`[${ATTRIBUTES.TRANSLATED_TO}]`)
-        .forEach((element) => {
-          element.removeAttribute(ATTRIBUTES.TRANSLATED_TO);
-        });
-      document
-        .querySelectorAll(`[${ATTRIBUTES.TRANSLATION_STATE}]`)
-        .forEach((element) => {
-          element.removeAttribute(ATTRIBUTES.TRANSLATION_STATE);
-        });
+      document.querySelectorAll(`[${ATTRIBUTES.TRANSLATED_TO}]`).forEach((element) => {
+        element.removeAttribute(ATTRIBUTES.TRANSLATED_TO);
+      });
+      document.querySelectorAll(`[${ATTRIBUTES.TRANSLATION_STATE}]`).forEach((element) => {
+        element.removeAttribute(ATTRIBUTES.TRANSLATION_STATE);
+      });
     }
     async waitForInitialContent() {
       await waitForDomToSettle(document.body);
@@ -4635,18 +4054,12 @@
       var _a;
       if (!SCRIPT_CONFIG.apiKey) {
         console.error("❌ No API key provided");
-        ErrorHandler.showErrorMessage(
-          "auth",
-          "Translation service not configured. Missing API key.",
-        );
+        ErrorHandler.showErrorMessage("auth", "Translation service not configured. Missing API key.");
         return;
       }
       if (!SCRIPT_CONFIG.domain) {
         console.error("❌ No domain provided");
-        ErrorHandler.showErrorMessage(
-          "config-invalid",
-          "Translation service not configured. Missing domain.",
-        );
+        ErrorHandler.showErrorMessage("config-invalid", "Translation service not configured. Missing domain.");
         return;
       }
       DomUtils.detectCSPViolations();
@@ -4693,12 +4106,8 @@
       const seoActive = usesSeoRouting(config.seoConfiguration);
       const currentLang = this.configManager.getCurrentLanguage();
       const apiConfig = this.configManager.getApiConfig();
-      const usesWorkerTranslate = Boolean(
-        apiConfig == null ? void 0 : apiConfig.translateApiUrl,
-      );
-      const needsTranslation =
-        !this.configManager.isInDefaultLanguage() &&
-        this.pageHasUntranslatedContent(currentLang);
+      const usesWorkerTranslate = Boolean(apiConfig == null ? void 0 : apiConfig.translateApiUrl);
+      const needsTranslation = !this.configManager.isInDefaultLanguage() && this.pageHasUntranslatedContent(currentLang);
       if (needsTranslation && !usesWorkerTranslate) {
         try {
           if (apiConfig) {
@@ -4706,23 +4115,22 @@
               translateConfig: {
                 targetLanguage: currentLang,
                 sourceLanguage: config.defaultLang,
-                websiteId: config.websiteId,
+                websiteId: config.websiteId
               },
               apiConfig: { key: apiConfig.key, domain: apiConfig.domain },
-              pageContext: PageContextCollector.collectPageContext(),
+              pageContext: PageContextCollector.collectPageContext()
             });
             if (!ok) {
               ErrorHandler.showErrorMessage(
                 "cache-unavailable",
-                "Cache service not configured/available. Translation disabled until restored.",
+                "Cache service not configured/available. Translation disabled until restored."
               );
-              (_a = this.languageDropdown) == null
-                ? void 0
-                : _a.update({ disabled: true });
+              (_a = this.languageDropdown) == null ? void 0 : _a.update({ disabled: true });
               this.serviceUnavailable = true;
             }
           }
-        } catch (e) {}
+        } catch (e) {
+        }
       }
       if (needsTranslation) {
         if (currentLang === (config == null ? void 0 : config.defaultLang)) {
@@ -4739,10 +4147,7 @@
       }
       this.navigationService.start();
       window.addEventListener("offline", () => {
-        ErrorHandler.showErrorMessage(
-          "offline",
-          "You are now offline. Using cached translations where available.",
-        );
+        ErrorHandler.showErrorMessage("offline", "You are now offline. Using cached translations where available.");
       });
       window.addEventListener("online", () => {
         ErrorHandler.clearError();
@@ -4781,10 +4186,7 @@
           this.updateLanguageDropdown();
         }
         await waitForDomToSettle(document.body);
-        if (
-          currentLang !== config.defaultLang &&
-          this.pageHasUntranslatedContent(currentLang)
-        ) {
+        if (currentLang !== config.defaultLang && this.pageHasUntranslatedContent(currentLang)) {
           try {
             await this.translatePage(currentLang);
           } catch (err) {
@@ -4805,35 +4207,23 @@
       }
     }
     pageHasUntranslatedContent(targetLang) {
-      const { textNodes, attributeTexts } =
-        TextExtractor.extractFreshContentForLanguage(
-          document,
-          targetLang,
-          (text) =>
-            TextExtractor.isJsonString(text) ||
-            TextExtractor.isUnwantedContent(text),
-        );
-      const metadata = MetadataUtils.collectMetadata();
-      return (
-        textNodes.length > 0 || attributeTexts.length > 0 || metadata.length > 0
+      const { textNodes, attributeTexts } = TextExtractor.extractFreshContentForLanguage(
+        document,
+        targetLang,
+        (text) => TextExtractor.isJsonString(text) || TextExtractor.isUnwantedContent(text)
       );
+      const metadata = MetadataUtils.collectMetadata();
+      return textNodes.length > 0 || attributeTexts.length > 0 || metadata.length > 0;
     }
     hydrateTranslatedStoreFromDom() {
-      document
-        .querySelectorAll(`[${ATTRIBUTES.SOURCE_TEXT}]`)
-        .forEach((element) => {
-          const textNode = Array.from(element.childNodes).find(
-            (node) => node.nodeType === Node.TEXT_NODE,
-          );
-          if (!textNode) {
-            return;
-          }
-          const stampedSource =
-            element.getAttribute(ATTRIBUTES.SOURCE_TEXT) ||
-            textNode.textContent ||
-            "";
-          setTranslatedText(textNode, textNode.textContent || stampedSource);
-        });
+      document.querySelectorAll(`[${ATTRIBUTES.SOURCE_TEXT}]`).forEach((element) => {
+        const textNode = Array.from(element.childNodes).find((node) => node.nodeType === Node.TEXT_NODE);
+        if (!textNode) {
+          return;
+        }
+        const stampedSource = element.getAttribute(ATTRIBUTES.SOURCE_TEXT) || textNode.textContent || "";
+        setTranslatedText(textNode, textNode.textContent || stampedSource);
+      });
     }
     enqueue(element) {
       this.sender.enqueue(element);
@@ -4842,23 +4232,21 @@
       const config = this.configManager.getTranslationConfig();
       if (!config) return;
       this.observer = new TranslationObserver(
-        () => {},
+        () => {
+        },
         (element) => this.enqueue(element),
-        this.configManager,
+        this.configManager
       );
       this.observer.start();
     }
   }
   const SCRIPT_CONFIG = (() => {
     const tag = document.currentScript;
-    const rawDomain =
-      (tag == null ? void 0 : tag.dataset.domain) || window.location.host;
+    const rawDomain = (tag == null ? void 0 : tag.dataset.domain) || window.location.host;
     const domain = DomUtils.normalizeDomain(rawDomain);
     const apiKey = (tag == null ? void 0 : tag.dataset.apiKey) || "";
     const theme = (tag == null ? void 0 : tag.dataset.theme) || "dark";
-    const disableAutoBrowserTranslation =
-      (tag == null ? void 0 : tag.dataset.disableAutoBrowserTranslation) ===
-      "true";
+    const disableAutoBrowserTranslation = (tag == null ? void 0 : tag.dataset.disableAutoBrowserTranslation) === "true";
     return { apiKey, domain, theme, disableAutoBrowserTranslation };
   })();
   (async () => {
@@ -4868,10 +4256,7 @@
     window.__translateDone = true;
     const apiService = new ApiService();
     const configManager = new ConfigManager(apiService, SCRIPT_CONFIG);
-    const translationEngine = new TextTranslationEngine(
-      apiService,
-      configManager,
-    );
+    const translationEngine = new TextTranslationEngine(apiService, configManager);
     let cacheEditor = null;
     let cacheEditorStartupPromise = null;
     async function ensureCacheEditorRunning() {
@@ -4880,23 +4265,13 @@
       if (!cacheEditorStartupPromise) {
         cacheEditorStartupPromise = (async () => {
           try {
-            if (
-              !(await apiService.shouldEnableEditSession({
-                key: SCRIPT_CONFIG.apiKey,
-              }))
-            ) {
+            if (!await apiService.shouldEnableEditSession({ key: SCRIPT_CONFIG.apiKey })) {
               return;
             }
             if (cacheEditor) return;
-            cacheEditor = new CacheEditorService(
-              apiService,
-              configManager,
-              SCRIPT_CONFIG.theme,
-            );
+            cacheEditor = new CacheEditorService(apiService, configManager, SCRIPT_CONFIG.theme);
             cacheEditor.start();
-            window.addEventListener("beforeunload", () =>
-              cacheEditor == null ? void 0 : cacheEditor.stop(),
-            );
+            window.addEventListener("beforeunload", () => cacheEditor == null ? void 0 : cacheEditor.stop());
           } finally {
             cacheEditorStartupPromise = null;
           }
